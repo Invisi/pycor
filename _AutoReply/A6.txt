@@ -1,0 +1,12 @@
+<html>
+    <p>
+    Liebe(r) Studierende(r),<br> <br>
+    Sie haben <b>die gesamte Hausuebung erfolgreich geloest</b>! Herzlichen Glueckwunsch! Bitte drucken Sie diese Email aus und legen Sie sie zur Testatunterzeichnung zusammen mit den handschriftlichen Loesungen aller Aufgabenteile vor.
+    </p>
+
+    <p>
+    Mit freundlichen Gruessen,<br> <br> <br>
+    PyCor
+    </p>
+
+</html>

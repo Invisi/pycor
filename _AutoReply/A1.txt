@@ -1,0 +1,12 @@
+<html>
+    <p>
+    Liebe(r) Studierende(r),<br> <br>
+    die Hausuebung ist <b>zwingend mit Ihrem FH-Aachen-Account ('*****@alumni.fh-aachen.de') einzusenden</b>. Bitte senden Sie Ihre Loesungen erneut ein. Die erfolgte Abgabe wird nicht weiter verabeitet und nicht gewertet.
+    </p>
+
+    <p>
+    Mit freundlichen Gruessen,<br> <br> <br>
+    PyCor
+    </p>
+
+</html>

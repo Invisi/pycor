@@ -1,0 +1,13 @@
+<html>
+    <p>
+    Liebe(r) Studierende(r),<br> <br>
+    Sie haben <b>keine Excel-Datei eingereicht</b>. Gueltige Formate sind: xls, xlsx and xlsm. <br>
+	Sollten Sie Schwierigkeiten mit dem Einreichen Ihrer Loesungen haben, senden Sie bitte eine Email mit dem Betreff 'PROBLEM'. Wir nehmen schnellstmoeglich Kontakt mit Ihnen auf. Allgemeine Fragen zur Bearbeitung Hausuebung werden nicht beantwortet! 
+    </p>
+
+    <p>
+    Mit freundlichen Gruessen,<br> <br> <br>
+    PyCor
+    </p>
+
+</html>
