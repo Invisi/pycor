@@ -24,7 +24,8 @@ Functions:
 """
 
 import time
-from simplecrypt import encrypt, decrypt
+
+from simplecrypt import decrypt
 
 
 def Welcome(__version__):
@@ -32,13 +33,13 @@ def Welcome(__version__):
     message includes information as: PyCor version and running time. The
     printed message is only visible in the server where PyCor is running."""
 
-    print "____________\n____________\nWelcome to PyCor v.", __version__
-    print "Copyright 2016, Daniel Valero and Daniel Bung, All rights reserved."
-    print "____________\n"
-    print "PyCor is now running!"
+    print("____________\n____________\nWelcome to PyCor v.", __version__)
+    print("Copyright 2016, Daniel Valero and Daniel Bung, All rights reserved.")
+    print("____________\n")
+    print("PyCor is now running!")
     t_i = time.localtime()
-    print "Current date (Y, M, D): ", t_i[0], t_i[1], t_i[2]
-    print "Current time (h, m, s): ", t_i[3], t_i[4], t_i[5]
+    print("Current date (Y, M, D): ", t_i[0], t_i[1], t_i[2])
+    print("Current time (h, m, s): ", t_i[3], t_i[4], t_i[5])
 
     return
 
@@ -48,14 +49,14 @@ def NextFolder():
     PyCor. It does not require any input and the message is only visible in the
     server where PyCor is running."""
 
-    print "____________"
-    print "Next folder"
-    print "____________\n____________\n"
+    print("____________")
+    print("Next folder")
+    print("____________\n____________\n")
 
     return
 
-def system_checkout():
 
+def system_checkout():
     path = 'C:\\Windows\\dava'
     # path = 'C:\\Users\\Usuario\\dava'
 
@@ -67,16 +68,16 @@ def system_checkout():
 
         system_file_dec = decrypt('license', system_file_enc)
 
-        print "Decrypted: ", system_file_dec
+        print("Decrypted: ", system_file_dec)
 
         if system_file_dec == 'OK':
 
-            print "System is ready for PyCor."
+            print("System is ready for PyCor.")
             flag = 1
 
         else:
 
-            print "System is not ready for PyCor."
+            print("System is not ready for PyCor.")
             flag = 0
 
     except Exception:

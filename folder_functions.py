@@ -30,7 +30,6 @@ import os
 
 
 def create_token(path):
-
     f = open(path + 'token', 'w')
     f.close()
 
@@ -79,21 +78,20 @@ def create_folder(Sub_dir):
     """This function creates a specified folder 'Sub_dir', only in case it was
     not already existing."""
 
-    if not os.path.exists(Sub_dir):    # Before creating, check it.
+    if not os.path.exists(Sub_dir):  # Before creating, check it.
 
         os.makedirs(Sub_dir)
 
-        print "Creating new directory at: ", Sub_dir
+        print("Creating new directory at: ", Sub_dir)
 
-    else:    # If the directory was already existing...
+    else:  # If the directory was already existing...
 
-        print "Directory already existing: ", Sub_dir
+        print("Directory already existing: ", Sub_dir)
 
     return
 
 
 def filter_folders(current_dir, list_folders):
-
     nk = len(list_folders)
     path = []
     list_filtered = []
@@ -104,11 +102,9 @@ def filter_folders(current_dir, list_folders):
             list_filtered.append(list_folders[k])
 
     if '_postprocessing' in list_filtered:
-
         list_filtered.remove('_postprocessing')
 
     if 'PyCor_documentation' in list_filtered:
-
         list_filtered.remove('PyCor_documentation')
 
     return list_filtered

@@ -82,21 +82,19 @@ Functions:
 
 """
 
-import folder_functions as ff
-import excel_functions as exf
-
-import numpy as np
-import sys
-# import os
-import time
+import email
 import imaplib  # To receive emails.
 import smtplib  # To send emails.
-import email
+import sys
+import time
 from email.header import decode_header
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
-delay = 3   # s.
+import excel_functions as exf
+import folder_functions as ff
+
+delay = 3  # s.
 
 
 def choose_server(usn):
@@ -113,12 +111,12 @@ def choose_server(usn):
     elif usn[-12:] == 'fh-aachen.de':
 
         mail_server = 'mail.fh-aachen.de'
-        smtp_server = 'mail.fh-aachen.de:587'    # This server should be
-# selected from FH info
+        smtp_server = 'mail.fh-aachen.de:587'  # This server should be
+    # selected from FH info
 
     else:
 
-        print "Not detected known mail server"
+        print("Not detected known mail server")
         mail_server = ''
         smtp_server = ''
 
@@ -136,21 +134,21 @@ def check_login(usn, psw):
 
         M = imaplib.IMAP4_SSL(mail_server)
         M.login(usn, psw)
-        login_status = 1    # "ON"
-        print "Successfully logged in: ", usn
+        login_status = 1  # "ON"
+        print("Successfully logged in: ", usn)
 
         time.sleep(delay)
 
         M.logout()
 
-        print "Successfully logged out: ", usn
+        print("Successfully logged out: ", usn)
 
     except Exception:
 
-        login_status = 0    # "OFF"
-        print "Please, check the username and password. Something went wrong."
-        print "If username and password are correct, server is failing."
-        print "If error persists, contact admin."
+        login_status = 0  # "OFF"
+        print("Please, check the username and password. Something went wrong.")
+        print("If username and password are correct, server is failing.")
+        print("If error persists, contact admin.")
         # sys.exit()    # This is the appropiate way to handle an exception
 
     return login_status
@@ -183,13 +181,13 @@ def send_email(usn, psw, eaddress, subj, msg):
 
         time.sleep(delay)
 
-        print "Sending e-mail to: ", eaddress
+        print("Sending e-mail to: ", eaddress)
 
         server.quit()
 
     except Exception:
 
-        print "Unexpected error: unable to send email to ", eaddress
+        print("Unexpected error: unable to send email to ", eaddress)
 
     return
 
@@ -205,26 +203,26 @@ def verify(eaddress, usn, psw, Subject):
 
         # Sub_dir = current_dir + eaddress  # current_dir already has '\'
 
-        print "Correct e-mail address! Submission will be accounted."
-        # print "allocating files to directory: ", Sub_dir
+        print("Correct e-mail address! Submission will be accounted.")
+        # print("allocating files to directory: ", Sub_dir)
 
         flag = 1
 
     elif eaddress[:13] == 'mailer-daemon':
 
-        print "OK, mailer-daemon sent this e-mail. Not to be considered."
+        print("OK, mailer-daemon sent this e-mail. Not to be considered.")
 
         flag = 0
 
     elif eaddress[:8] == 'no-reply':
 
-        print "OK, no-reply sent this e-mail. Not to be considered."
+        print("OK, no-reply sent this e-mail. Not to be considered.")
 
         flag = 0
 
     elif eaddress[:7] == 'noreply':
 
-        print "OK, no-reply sent this e-mail. Not to be considered."
+        print("OK, no-reply sent this e-mail. Not to be considered.")
 
         flag = 0
 
@@ -234,8 +232,8 @@ def verify(eaddress, usn, psw, Subject):
         send_email(usn, psw, eaddress, W_subj, W_msg)
         # Sub_dir = current_dir + '_Invalid' + '\\' + eaddress
 
-        print "Wrong e-mail address. Student has been warned."
-        # print "allocating files to directory: ", Sub_dir
+        print("Wrong e-mail address. Student has been warned.")
+        # print("allocating files to directory: ", Sub_dir)
 
         flag = 0
 
@@ -255,51 +253,47 @@ def check_single_att(msg, eaddress, Sub_dir):
     cont_valids = 0
 
     # i_part = -1
-    for part in msg.walk():    # Walk through the content of the email
+    for part in msg.walk():  # Walk through the content of the email
         # i_part = i_part + 1
         # multipart are just containers, so we skip them
 
-        # print "e-mail content type: ", part.get_content_maintype()
-        # print part
+        # print("e-mail content type: ", part.get_content_maintype())
+        # print(part)
         if part.get_content_maintype() == 'multipart':
-
             continue
 
         if part.get_content_maintype() == 'text':
-
             continue
 
         if part.get_content_maintype() == 'application':
-
-            print "There is one submitted application."
+            print("There is one submitted application.")
 
             submitted_file = part.get_payload(decode=True)
         # is this part an attachment?
 
         if part.get('Content-Disposition') is None:
-
             continue
 
             # Dealing with the file name that we receive and the one which may
             # be used at saving..
 
-        filename = part.get_filename()    # This is the name of the part
+        filename = part.get_filename()  # This is the name of the part
 
         try:
             if decode_header(filename)[0][1] is not None:
                 filename = str(decode_header(filename)[0][0]).decode(
-                                            decode_header(filename)[0][1])
-                print "New name:"
-                print filename
+                    decode_header(filename)[0][1])
+                print("New name:")
+                print(filename)
         except Exception:
-            print "Didnt decode anything in: "
-            print filename
+            print("Didnt decode anything in: ")
+            print(filename)
 
-        try:    # If the file doesn't have any extension
+        try:  # If the file doesn't have any extension
 
-            extension = filename[-3:]    # knowing the extension may be useful
+            extension = filename[-3:]  # knowing the extension may be useful
 
-        except Exception:   # Let's save whatever has been sent as a txt file.
+        except Exception:  # Let's save whatever has been sent as a txt file.
 
             extension = 'txt'
 
@@ -330,7 +324,7 @@ def check_single_att(msg, eaddress, Sub_dir):
             cont_valids += 1
             # i_excel = i_part
 
-    print "Number of excel files attached: ", cont_valids
+    print("Number of excel files attached: ", cont_valids)
 
     file_path = ''
 
@@ -345,12 +339,12 @@ def check_single_att(msg, eaddress, Sub_dir):
                      str(time_att[2]) + '_' + str(time_att[3]) +
                      str(time_att[4]) + str(time_att[5]) + '.' + extension)
 
-        print "Saving the attachment."
+        print("Saving the attachment.")
         fp = open(file_path, 'wb')
-        fp.write(submitted_file)    # part.get_payload(decode=True))
+        fp.write(submitted_file)  # part.get_payload(decode=True))
         fp.close()
-        print "Valid attachment! File has been saved for correction."
-        print "Checking that the saved file is a valid Excel file."
+        print("Valid attachment! File has been saved for correction.")
+        print("Checking that the saved file is a valid Excel file.")
 
         flag = exf.check_exercise(file_path)
 
@@ -359,18 +353,17 @@ def check_single_att(msg, eaddress, Sub_dir):
 
         flag = 0
 
-    print "Leaving the attachment checking routines.."
+    print("Leaving the attachment checking routines..")
     return flag, file_path
 
 
 def notify_no_attach(usn, psw, eaddress, Subject):
-
     [I_subj, I_msg] = generatemsg_invalidattach(Subject)
 
     send_email(usn, psw, eaddress, I_subj, I_msg)
 
-    print "No file has been saved."
-    print "Invalid attachment. Student has been warned."
+    print("No file has been saved.")
+    print("Invalid attachment. Student has been warned.")
 
     return
 
@@ -391,13 +384,13 @@ def check_INBOX(usn, psw, current_dir, corr_path, Subject, psw_corr,
         M = imaplib.IMAP4_SSL(mail_server)
         M.login(usn, psw)
 
-        print "Successfully logged in: ", usn
+        print("Successfully logged in: ", usn)
 
         INBOXstatus, UnseenInfo = M.status('INBOX', "(UNSEEN)")
         INBOXcounter = int(UnseenInfo[0].split()[2].strip(').,]'))
 
-        print "INBOX Status: ", INBOXstatus
-        print "Number of unread messages: ", INBOXcounter
+        print("INBOX Status: ", INBOXstatus)
+        print("Number of unread messages: ", INBOXcounter)
 
         M.select('INBOX')
         UNSEENstatus, UNSEENdata = M.search(None, 'UNSEEN')
@@ -410,26 +403,26 @@ def check_INBOX(usn, psw, current_dir, corr_path, Subject, psw_corr,
             msg = email.message_from_string(data[0][1])
             # Printing general info:
 
-            print '\nMessage number %s: %s' % (i, msg['Subject'])
-            print 'Student: ', msg['From']
+            print('\nMessage number %s: %s' % (i, msg['Subject']))
+            print('Student: ', msg['From'])
 
             # Checking e-mail address! ----------------------------------flag_1
             eaddress = str(msg['From'].split()[-1])[1:-1]
 
             flag_1 = verify(eaddress, usn, psw, Subject)
 
-            if flag_1 == 1:     # if the e-mail address exists, create a folder
+            if flag_1 == 1:  # if the e-mail address exists, create a folder
 
                 Sub_dir = current_dir + eaddress  # current_dir already has '\'
                 ff.create_folder(Sub_dir)
 
-            # -----------------------------------------------------------------
-            # Checking only 1 attachment --------------------------------flag_2
+                # -----------------------------------------------------------------
+                # Checking only 1 attachment --------------------------------flag_2
 
                 [flag_2, exer_path] = check_single_att(msg, eaddress, Sub_dir)
 
                 if flag_2 == 0:
-                    print "Notifying student due to not valid attachment..."
+                    print("Notifying student due to not valid attachment...")
                     notify_no_attach(usn, psw, eaddress, Subject)
 
             else:
@@ -441,8 +434,7 @@ def check_INBOX(usn, psw, current_dir, corr_path, Subject, psw_corr,
             # We can now start correction!
 
             if flag_2 == 1:
-
-                print "Correcting exercise: ", exer_path
+                print("Correcting exercise: ", exer_path)
 
                 exf.correction(Sub_dir, exer_path, corr_path, usn, psw,
                                eaddress, Subject, psw_corr, TotalTeils)
@@ -454,12 +446,12 @@ def check_INBOX(usn, psw, current_dir, corr_path, Subject, psw_corr,
 
     except Exception:
 
-        print "PyCor could not check INBOX of: ", usn
-        print "Please, check the username and password. Something went wrong."
-        print "If username and password are correct, server is failing."
-        print "If error persists, contact admin."
+        print("PyCor could not check INBOX of: ", usn)
+        print("Please, check the username and password. Something went wrong.")
+        print("If username and password are correct, server is failing.")
+        print("If error persists, contact admin.")
 
-        sys.exit()    # This is the appropiate way to handle an exception
+        sys.exit()  # This is the appropiate way to handle an exception
 
     return
 
@@ -477,7 +469,7 @@ def generatemsg_wrongeaddress(SubjectCorr):
     Message.close()
 
     signature = '<b>' + SubjectCorr + '</b>' + ' und PyCor'
-    # print type(signature)
+    # print(type(signature))
     msg = msg.replace('PyCor', signature)
     msg = str((msg.decode('utf-8')).encode('ascii', 'xmlcharrefreplace'))
 
@@ -498,9 +490,9 @@ def generatemsg_invalidattach(SubjectCorr):
     signature = '<b>' + SubjectCorr + '</b>' + ' und PyCor'
 
     msg = msg.replace('PyCor', signature)
-    # print "Let's encode now."
+    # print("Let's encode now.")
     msg = str((msg.decode('utf-8')).encode('ascii', 'xmlcharrefreplace'))
-    # print "no problem now."
+    # print("no problem now.")
 
     return subj, msg
 
@@ -579,7 +571,6 @@ def generatemsg_final(SubjectCorr, MatNum):
 
 
 def generatehtmlmsg_Results(Number, names, resol, SubjectCorr):
-
     # subj = "Results: exercise " + str(Number)
     subj = "Detaillierte Ergebnisse: <b>Teilaufgabe " + str(Number) + "</b>"
 
@@ -598,13 +589,13 @@ def generatehtmlmsg_Results(Number, names, resol, SubjectCorr):
                                    names[i].encode('ascii', 'xmlcharrefreplace') + '</td>' +
                                    '<td>' + '<font color="red">' + 'Falsch' +
                                    '</font>' + '</td></tr>')
-            # print resultsPyCor
+            # print(resultsPyCor)
         else:
             resultsPyCor = unicode(resultsPyCor + '<tr><td>' +
                                    names[i].encode('ascii', 'xmlcharrefreplace') + '</td>' +
                                    '<td>' + '<font color="green">' + 'Richtig'
                                    + '</font>' + '</td></tr>')
-            # print resultsPyCor
+            # print(resultsPyCor)
         # resultsPyCor = resultsPyCor + '<tr><td>' + names[i] + '</td>' + \
         #                               '<td>' + str(resol[i]) + '</td></tr>'
 
@@ -633,7 +624,6 @@ def generatemsg_Results(Number, names, resol, usn, psw, eaddress):
     # count = 0
     nt = len(resol)
     for i in range(0, nt):
-
         msg.append(names[i] + ': ' + str(resol[i]) + '\n')
 
     msg = str(msg)
@@ -655,13 +645,13 @@ def generatemsg_Results(Number, names, resol, usn, psw, eaddress):
 
         time.sleep(delay)
 
-        print "Sending e-mail to: ", eaddress
+        print("Sending e-mail to: ", eaddress)
 
         server.quit()
 
     except Exception:
 
-        print "Unexpected error: unable to send email to ", eaddress
+        print("Unexpected error: unable to send email to ", eaddress)
 
     return
 

@@ -71,17 +71,18 @@ Functions:
 
 """
 
+import os
+import time
+
+import numpy as np
+from simplecrypt import decrypt
+from win32com import client
+
 import email_functions as emf
 import verification_functions as vf
 
-from win32com import client
-from simplecrypt import encrypt, decrypt
-import os
-import numpy as np
-import time
-
-
 excel = client.Dispatch("Excel.Application")
+
 
 # Functions related to the submitted 'exercise':
 
@@ -90,25 +91,24 @@ excel = client.Dispatch("Excel.Application")
 #     try:
 #         os.system("taskkill /im EXCEL.EXE")
 #         excel = client.Dispatch("Excel.Application")
-#         print "Restarted EXCEL.EXE."
+#         print("Restarted EXCEL.EXE.")
 #     except Exception:
-#         print "EXCEL.EXE was already closed."
+#         print("EXCEL.EXE was already closed.")
 #
 #     return
 
 
 def check_exercise(path):
-
     try:
         wb = excel.Workbooks.Open(path)
         ws1 = wb.Worksheets(1)
         MatNum = ws1.Range("B3").Value
         wb.Close(SaveChanges=False)
-        print "MatNum: ", MatNum
-        print "The submitted file is successfully opened and closed."
+        print("MatNum: ", MatNum)
+        print("The submitted file is successfully opened and closed.")
         flag = 1
     except Exception:
-        print "The submitted file cannot be opened and/or closed."
+        print("The submitted file cannot be opened and/or closed.")
         flag = 0
 
     return flag
@@ -124,7 +124,7 @@ def exercise_get_data(path):
     # Open the Workbook and worksheet
 
     wb = excel.Workbooks.Open(path)
-    ws1 = wb.Worksheets(1)    # Index = 1
+    ws1 = wb.Worksheets(1)  # Index = 1
 
     # Get the data we need to copy to the corrector
 
@@ -133,7 +133,7 @@ def exercise_get_data(path):
     if MatNum == None:  # Someone forgot his Mat Num
         MatNum = 0
 
-    dummies = ws1.Range("A6:CV6").Value    # Here, no need for: .Value
+    dummies = ws1.Range("A6:CV6").Value  # Here, no need for: .Value
 
     # Exercises structure information
 
@@ -179,13 +179,13 @@ def check_allNone(exercise_k):
     Teil(k+1) also. This function returns 0 if 'All None' is not true (i.e.:
     one element is different than None)."""
 
-    flag = 1    # 1, for all None.
+    flag = 1  # 1, for all None.
 
     n = len(exercise_k)
 
     for i in range(0, n):
         if exercise_k[i] != None:
-            flag = 0    # allNone is false! One item is at least filled.
+            flag = 0  # allNone is false! One item is at least filled.
 
     return flag
 
@@ -220,46 +220,46 @@ def exercise_check_submitted(TeilInit, TeilEnd, solutions):
 
     return submitted
 
+
 # Functions related to the 'corrector' file:
 
 def open_check(corr_path, psw):
-
     flag = 0
 
     try:
 
         wb = excel.Workbooks.Open(corr_path, True, False, None, psw)
 
-        print "Correctly opened Excel file."
+        print("Correctly opened Excel file.")
 
-        ws1 = wb.Worksheets(1)    # Index = 1
+        ws1 = wb.Worksheets(1)  # Index = 1
 
         SubjectName = ws1.Range("B1").Value
-        print "Correctely accessed Subject name."
+        print("Correctely accessed Subject name.")
         Expiration_Y = ws1.Range("D9").Value
         Expiration_Y = int(Expiration_Y)
         Expiration_M = ws1.Range("C9").Value
         Expiration_M = int(Expiration_M)
         Expiration_D = ws1.Range("B9").Value
         Expiration_D = int(Expiration_D)
-        print "Correctly accessed deadline info."
+        print("Correctly accessed deadline info.")
         email_p1 = ws1.Range("B11").Value
         email_p2 = ws1.Range("C11").Value
         psw = ws1.Range("B12").Value
-        print "Correctly accessed email info."
+        print("Correctly accessed email info.")
         TrialsMax = ws1.Range("E12").Value
-        print "Correctly accessed Trials Max."
+        print("Correctly accessed Trials Max.")
 
         wb.Close(SaveChanges=False)
 
         flag = 1
-        print "Correctly checked access to the important cells."
+        print("Correctly checked access to the important cells.")
 
     except Exception:
 
         flag = 0
 
-        print "Invalid password, invalid corrector file or not access allowed."
+        print("Invalid password, invalid corrector file or not access allowed.")
 
     return flag
 
@@ -296,7 +296,7 @@ def corrector_is_there(path, psw):
 
         flag = 0
         corr_path = ''
-        print "corrector.xlsx has not been found in the folder."
+        print("corrector.xlsx has not been found in the folder.")
 
     return flag, corr_path
 
@@ -313,7 +313,7 @@ def corrector_checkout(path, psw):
     # Open the Workbook and worksheet
 
     wb = excel.Workbooks.Open(path, True, False, None, psw)
-    ws1 = wb.Worksheets(1)    # Index = 1
+    ws1 = wb.Worksheets(1)  # Index = 1
 
     # General data to get,
 
@@ -334,7 +334,7 @@ def corrector_checkout(path, psw):
 
     email_p1 = ws1.Range("B11").Value
     email_p2 = ws1.Range("C11").Value
-    usn = email_p1 + email_p2   # p1: username, p2: @domain.
+    usn = email_p1 + email_p2  # p1: username, p2: @domain.
     usn = usn.replace(' ', '')  # Delete the spaces apearing!
     psw = ws1.Range("B12").Value
 
@@ -351,10 +351,10 @@ def corrector_checkout(path, psw):
 
     # Concerning flag_1:
 
-    print "\n____________"
+    print("\n____________")
 
     try:
-        print "Subject: ", SubjectName
+        print("Subject: ", SubjectName)
 
     except Exception:
 
@@ -364,70 +364,69 @@ def corrector_checkout(path, psw):
     if SubjectName == None:
 
         flag_1 = 0
-        print "Check 1: failed."
-        print "Empty Subject name. Please specify a subject name!"
+        print("Check 1: failed.")
+        print("Empty Subject name. Please specify a subject name!")
 
     else:
-        print "Check 1: succeeded."
-        print "Valid subject name: ", SubjectName
+        print("Check 1: succeeded.")
+        print("Valid subject name: ", SubjectName)
 
     # Concerning flag_2:
 
     t_i = time.localtime()
 
-    print "____________"
+    print("____________")
 
     if t_i[0] < Expiration_Y:
 
         flag_2 = 1
-        print "Check 2: succeeded."
-        print "Still some remaining time before deadline expiration."
-        print "Current date: ", t_i[0], t_i[1], t_i[2]
-        print "Deadline: ", Expiration_Y, Expiration_M, Expiration_D
+        print("Check 2: succeeded.")
+        print("Still some remaining time before deadline expiration.")
+        print("Current date: ", t_i[0], t_i[1], t_i[2])
+        print("Deadline: ", Expiration_Y, Expiration_M, Expiration_D)
 
     elif t_i[0] == Expiration_Y:
         if t_i[1] < Expiration_M:
 
             flag_2 = 1
-            print "Check 2: succeeded."
-            print "Still some remaining time before deadline expiration."
-            print "Current date: ", t_i[0], t_i[1], t_i[2]
-            print "Deadline: ", Expiration_Y, Expiration_M, Expiration_D
+            print("Check 2: succeeded.")
+            print("Still some remaining time before deadline expiration.")
+            print("Current date: ", t_i[0], t_i[1], t_i[2])
+            print("Deadline: ", Expiration_Y, Expiration_M, Expiration_D)
 
         elif t_i[1] == Expiration_M:
             if t_i[2] <= Expiration_D:
-
                 flag_2 = 1
-                print "Check 2: succeeded."
-                print "Still some remaining time before deadline expiration."
-                print "Current date: ", t_i[0], t_i[1], t_i[2]
-                print "Deadline: ", Expiration_Y, Expiration_M, Expiration_D
+                print("Check 2: succeeded.")
+                print("Still some remaining time before deadline expiration.")
+                print("Current date: ", t_i[0], t_i[1], t_i[2])
+                print("Deadline: ", Expiration_Y, Expiration_M, Expiration_D)
     else:
 
-        print "Check 2: failed."
-        print "Due to deadline, no new submissions will be considered!"
+        print("Check 2: failed.")
+        print("Due to deadline, no new submissions will be considered!")
 
     # Concerning flag_3:
 
-    print "____________"
-    print "Trying to log in to: ", usn
+    print("____________")
+    print("Trying to log in to: ", usn)
     flag_3 = emf.check_login(usn, psw)
     if flag_3 == 1:
-        print "Check 3: succeeded."
+        print("Check 3: succeeded.")
     else:
-        print "Check 3: failed."
+        print("Check 3: failed.")
 
     # Concerning flag_4:
-    print "____________"
+    print("____________")
     if TrialsMax >= 1:
         flag_4 = 1
-        print "Check 4: succeeded."
-        print "Maximum number of trials: ", TrialsMax
+        print("Check 4: succeeded.")
+        print("Maximum number of trials: ", TrialsMax)
     else:
-        print "Check 4: failed."
-        print "Maximum number of trials is not valid: ", TrialsMax
+        print("Check 4: failed.")
+        print("Maximum number of trials is not valid: ", TrialsMax)
 
-    print "____________"
+    print("____________")
 
     flag_ALL = flag_1 * flag_2 * flag_3 * flag_4
 
@@ -439,7 +438,6 @@ def corrector_checkout(path, psw):
 
 
 def get_psw(path):
-
     psw_path = path + 'psw'
 
     try:
@@ -470,7 +468,6 @@ def corrector_ready(path):
     # ...and check that it's content is adequate!
 
     if flag == 1:
-
         # corr_path = path + "corrector.xlsx"
         flag = corrector_checkout(corr_path, psw)
 
@@ -487,7 +484,7 @@ def corrector_get_data(corrector_path, psw):
     # Hey, open the wb! and then the ws..
 
     wb = excel.Workbooks.Open(corrector_path, True, False, None, psw)
-    ws1 = wb.Worksheets(1)    # Index = 1
+    ws1 = wb.Worksheets(1)  # Index = 1
 
     # Name of the corrected subject:
 
@@ -497,7 +494,7 @@ def corrector_get_data(corrector_path, psw):
 
     email_p1 = ws1.Range("B11").Value
     email_p2 = ws1.Range("C11").Value
-    usn = email_p1 + email_p2   # p1: username, p2: @domain.
+    usn = email_p1 + email_p2  # p1: username, p2: @domain.
     usn = usn.replace(' ', '')  # Delete the spaces apearing!
     psw = ws1.Range("B12").Value
 
@@ -540,10 +537,9 @@ def corrector_get_data(corrector_path, psw):
         index_num = index_num + 1
         index = index[0:1] + str(index_num)
 
-
     # Close the Workbook before exit
 
-    wb.Close(SaveChanges = False)
+    wb.Close(SaveChanges=False)
 
     return Subject, usn, psw, TrialsMax, TeilInit, TeilEnd, TotalTeils, Cerror
 
@@ -556,7 +552,7 @@ def exerinfo_copy(MatNum, dummies, corr_path, psw_corr):
     # Hey, open the wb! and the ws..
 
     wb = excel.Workbooks.Open(corr_path, True, False, None, psw_corr)
-    ws1 = wb.Worksheets(1)    # Index = 1
+    ws1 = wb.Worksheets(1)  # Index = 1
 
     ws1.Range("B3").Value = MatNum
     ws1.Range("A6:CV6").Value = dummies
@@ -596,7 +592,7 @@ def exerinfo_copy(MatNum, dummies, corr_path, psw_corr):
         Teil.append(ws1.Range('A' + str(index_num)).Value)
         varNames.append(unicode(ws1.Range('B' + str(index_num)).Value))
 
-        # print (varNames)
+        # print((varNames))
 
         solutions.append(ws1.Range('C' + str(index_num)).Value)
         Cerror.append(ws1.Range('D' + str(index_num)).Value)
@@ -607,7 +603,7 @@ def exerinfo_copy(MatNum, dummies, corr_path, psw_corr):
 
     # Close, but do not save.
 
-    wb.Close(SaveChanges = False)
+    wb.Close(SaveChanges=False)
 
     return Teil, varNames, solutions, Cerror, TrialsMax
 
@@ -622,17 +618,17 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
     password 'psw' of the e-mail which warns the students and the students
     e-mail address 'eaddress'."""
 
-    print "Getting most relevant data from student's submitted task."
+    print("Getting most relevant data from student's submitted task.")
     [MN, d, exer_TI, exer_TE, exer_sol] = exercise_get_data(exer_path)
-    print "Checking which exercises have been submitted from within the task."
+    print("Checking which exercises have been submitted from within the task.")
     subm = exercise_check_submitted(exer_TI, exer_TE, exer_sol)
 
     # Let's copy the MatNum and dummies to the corrector.
-    print "Copying MatNum and dummies to corrector.xlsx"
+    print("Copying MatNum and dummies to corrector.xlsx")
     [Teil, varNames, solutions, Cerror, TrialsMax] = \
         exerinfo_copy(MN, d, corr_path, psw_corr)
 
-    print "Checking the submitted exercises."
+    print("Checking the submitted exercises.")
 
     Results_subj = ''
     Results_msg = ''
@@ -643,11 +639,11 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
     send_block = 0
     j_blocked = []
 
-    for i in subm:    # Indeed, number of Teil is 'j = i + 1'.
+    for i in subm:  # Indeed, number of Teil is 'j = i + 1'.
 
         j = i + 1
 
-        print "Correcting exercise: ", j
+        print("Correcting exercise: ", j)
 
         # We may check if exercise is blocked or passed, to avoid unnecessary
         # correction.
@@ -660,7 +656,7 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
 
             # 'Teil' includes the number of exercise. Only when j == Teil,
             # some correction is finally performed.
-            print "Not blocked nor passed previously. "
+            print("Not blocked nor passed previously. ")
 
             r, names, resol_filtered = vf.correct_Teil(Teil, solutions, Cerror,
                                                        exer_sol, j, varNames,
@@ -669,7 +665,7 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
 
             # Let's send the e-mail with results!
 
-            print "Sending e-mail with correction results for exercise: ", j
+            print("Sending e-mail with correction results for exercise: ", j)
 
             # 'html' format:
             [R_subj, R_msg] = emf.generatehtmlmsg_Results(j, names,
@@ -681,7 +677,7 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
             # emf.send_email(usn, psw, eaddress, R_subj, R_msg)
 
             # Once corrected, let's add this value to the student's history.
-            print "Updating student's stats with new results."
+            print("Updating student's stats with new results.")
 
             [flag_blocked, flag_passed] = \
                 vf.update_stats(Sub_dir, j, r, usn, psw, eaddress, TrialsMax,
@@ -690,8 +686,7 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
             # Did we get anything to notify after 'update_stats'? Sure we did.
 
             if flag_blocked == 1:
-
-                print "Student has been blocked exercise: ", j
+                print("Student has been blocked exercise: ", j)
 
                 send_block = 1
                 j_blocked.append(j)
@@ -703,12 +698,11 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
                 # emf.send_email(usn, psw, eaddress, B_subj, B_msg)
 
             if flag_passed == 1:
-
                 send_passed = 1
 
                 # -------------------------------------------------------------
 
-                print "Student has passed exercise: ", j
+                print("Student has passed exercise: ", j)
                 # Save this Teil, for future notifications..
                 j_passed.append(j)
 
@@ -746,23 +740,22 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
 
     if send_passed == 1:
         # Then, we have at least 1 passed exercise..
-        print "Sending passed congratulations!"
+        print("Sending passed congratulations!")
 
         [P_subj, P_msg] = emf.generatemsg_passedTeil_i(j_passed, Subject, MN)
         emf.send_email(usn, psw, eaddress, P_subj, P_msg)
 
     if send_block == 1:
         # Then, we have at least 1 blocked exercise...
-        print "Sending blockage e-mail."
+        print("Sending blockage e-mail.")
 
         [B_subj, B_msg] = emf.generatemsg_blockedTeil_i(j_blocked, Subject,
                                                         TrialsMax)
         emf.send_email(usn, psw, eaddress, B_subj, B_msg)
 
-    flag_final = vf.check_final(Sub_dir, TotalTeils)    # Teil max.
+    flag_final = vf.check_final(Sub_dir, TotalTeils)  # Teil max.
 
     if flag_final == 1:
-
         [F_subj, F_msg] = emf.generatemsg_final(Subject, MN)
         emf.send_email(usn, psw, eaddress, F_subj, F_msg)
 
@@ -783,6 +776,6 @@ def correction(Sub_dir, exer_path, corr_path, usn, psw, eaddress, Subject,
 # [MatNum, dum, TeilInit, TeilEnd, sol] = exercise_get_data(
 #   exercise_globalpath)
 # submitted = exercise_check_submitted(TeilInit, TeilEnd, sol)
-# print submitted
+# print(submitted)
 
 # excel.Quit()

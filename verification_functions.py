@@ -46,13 +46,11 @@ Functions:
 
 """
 
-
-import email_functions as emf
-import folder_functions as ff
-
+import time
 
 import numpy as np
-import time
+
+import folder_functions as ff
 
 
 def compare(exer_x, corr_x, error_x):
@@ -67,9 +65,8 @@ def compare(exer_x, corr_x, error_x):
     try:
 
         # In case the stundent made a blank space after the comma...
-        if isinstance(corr_x, float) and isinstance(exer_x, unicode):
-
-            print "Converting the submitted variable from unicode to float..."
+        if isinstance(corr_x, float) and isinstance(exer_x, str):
+            print("Converting the submitted variable from unicode to float...")
 
             exer_x = exer_x.replace(',', '.')
             exer_x = float(exer_x.replace(' ', ''))
@@ -84,38 +81,31 @@ def compare(exer_x, corr_x, error_x):
 
         # This is the main comparison:
 
-        if (type(corr_x) == unicode and exer_x == corr_x):
-
+        if isinstance(corr_x, str) and exer_x == corr_x:
             resol_x = 1
 
-        elif (type(corr_x) == unicode and exer_x != corr_x):
-
+        elif isinstance(corr_x, str) and exer_x != corr_x:
             resol_x = 0
 
         # this accounts for > 0
-        elif exer_x <= (1.0 + 0.01*error_x)*corr_x and \
-                (1.0 - 0.01*error_x)*corr_x <= exer_x:
-
+        elif (1.0 + 0.01 * error_x) * corr_x >= exer_x >= (1.0 - 0.01 * error_x) * corr_x:
             resol_x = 1
 
         # this accounts for < 0
-        elif exer_x >= (1.0 + 0.01*error_x)*corr_x and \
-                (1.0 - 0.01*error_x)*corr_x >= exer_x:
-
+        elif (1.0 + 0.01 * error_x) * corr_x <= exer_x <= (1.0 - 0.01 * error_x) * corr_x:
             resol_x = 1
 
         else:
-
             resol_x = 0
-            print "submitted: ", exer_x
-            print "real solution: ", corr_x
+            print("submitted: ", exer_x)
+            print("real solution: ", corr_x)
 
     except Exception:
 
-            print "Unexpected variable comparison!"
-            resol_x = 0
-            print "submitted: ", exer_x
-            print "real solution: ", corr_x
+        print("Unexpected variable comparison!")
+        resol_x = 0
+        print("submitted: ", exer_x)
+        print("real solution: ", corr_x)
 
     return resol_x
 
@@ -135,39 +125,38 @@ def correct_Teil(Teil, solutions, Cerror, exer_sol, j, varNames, usn, psw,
 
     for k in range(0, nk):
 
-        # print "Checking variable no. ", k
+        # print("Checking variable no. ", k)
 
-        if Teil[k] == j:    # Then, we can 'compare' the values...
+        if Teil[k] == j:  # Then, we can 'compare' the values...
 
-            # print "Which corresponds to a submitted exercise."
+            # print("Which corresponds to a submitted exercise.")
 
             active[k] = 1
 
-            # print "Compare to corrector.xlsx solution."
+            # print("Compare to corrector.xlsx solution.")
 
-            resol[k] = compare(exer_sol[k], solutions[k], Cerror[k])   # 0 or 1
+            resol[k] = compare(exer_sol[k], solutions[k], Cerror[k])  # 0 or 1
             names.append(varNames[k])
 
     # Check all the acitve[k] == 1 results. Give back result (percentage)
 
-    result = 100.0 * np.sum(resol)/np.sum(active)
-    # print "Obtained results: ", resol
-    # print "Over active vars: ", active
-    # print "Whose var. names: ", names
+    result = 100.0 * np.sum(resol) / np.sum(active)
+    # print("Obtained results: ", resol)
+    # print("Over active vars: ", active)
+    # print("Whose var. names: ", names)
 
     # We may delete elements from arrays 'resol' and 'active' to fit dimensions
     # of 'names'. Let's call it: 'reshaping solution vectors'.
 
-    print "Reshaping solution vectors."
+    print("Reshaping solution vectors.")
     resol_filtered = resol[np.where(active > 0.5)]
 
     if result == 0:
-
-        result = 0.01    # We will use 0 as an empty slot in the results saving
+        result = 0.01  # We will use 0 as an empty slot in the results saving
 
     # We should send an e-mail with the results!!
 
-    # print "Sending e-mail with correction results for exercise: ", j
+    # print("Sending e-mail with correction results for exercise: ", j)
     #
     # # 'html' format:
     # [R_subj, R_msg] = emf.generatehtmlmsg_Results(j, names, resol_filtered,
@@ -217,8 +206,7 @@ def is_blocked(Sub_dir, j, TrialsMax):
             np.savetxt(block_dir, Teil_j_block, fmt='%3.2f')
 
         if Teil_j_block[-1] != 0:
-
-            print "This student is already blocked for exercise: ", j
+            print("This student is already blocked for exercise: ", j)
 
             flag_blocked = 1
 
@@ -247,8 +235,7 @@ def is_passed(Sub_dir, j):
         for k in range(0, nk):
 
             if Teil_j_block[k] == 100:
-
-                print "This student has already passed exercise: ", j
+                print("This student has already passed exercise: ", j)
                 flag_passed = 1
 
     except Exception:
@@ -268,8 +255,8 @@ def update_stats(Sub_dir, j, r, usn, psw, eaddress, TrialsMax, Subject,
     the blocking process."""
 
     Teil_j_str = "Exercise" + str(j)
-    flag_blocked = 0    # this flag will mark if the student is or was blocked.
-    flag_passed = 0     # this flag will mark if the student has passed.
+    flag_blocked = 0  # this flag will mark if the student is or was blocked.
+    flag_passed = 0  # this flag will mark if the student has passed.
     # flag_final = 0      # this flag will mark if ALL Teile are passed.
 
     # Let's start with 'Teil_j_block' -----------------------------------------
@@ -283,21 +270,20 @@ def update_stats(Sub_dir, j, r, usn, psw, eaddress, TrialsMax, Subject,
 
         if Teil_j_block[-1] != 0:
 
-            print "This student is already blocked for exercise: ", j
+            print("This student is already blocked for exercise: ", j)
 
             flag_blocked = 1
 
         else:
 
-            k = search_zero(Teil_j_block)   # 'k' is the first zero position
-            print "First zero at position: ", k
+            k = search_zero(Teil_j_block)  # 'k' is the first zero position
+            print("First zero at position: ", k)
             Teil_j_block[k] = r
 
             # Is him now blocked? Check that last item is not 0 or 100.
 
             if Teil_j_block[-1] != 0 and Teil_j_block[-1] != 100:
-
-                print "This student has been now blocked for exercise: ", j
+                print("This student has been now blocked for exercise: ", j)
 
                 flag_blocked = 1
 
@@ -309,7 +295,7 @@ def update_stats(Sub_dir, j, r, usn, psw, eaddress, TrialsMax, Subject,
     # Whatever we did with the array, let's save it now!
 
     block_dir = Sub_dir + "\\" + Teil_j_str + "_block.txt"
-    print "Saving blocking stats at: ", block_dir
+    print("Saving blocking stats at: ", block_dir)
     np.savetxt(block_dir, Teil_j_block, fmt='%3.2f')
 
     # Check which is the status of the student: blocked? passed? nothing?
@@ -322,7 +308,6 @@ def update_stats(Sub_dir, j, r, usn, psw, eaddress, TrialsMax, Subject,
     #     emf.send_email(usn, psw, eaddress, B_subj, B_msg)
 
     if r == 100:
-
         flag_passed = 1
 
         # # Send e-mail to warn the student about his Exercise 'j' blocking.
@@ -333,7 +318,7 @@ def update_stats(Sub_dir, j, r, usn, psw, eaddress, TrialsMax, Subject,
     # Some data should be stored appart: ../data ------------------------------
 
     data_dir = Sub_dir + "\\" + "data"
-    print "Creating folder: ", data_dir
+    print("Creating folder: ", data_dir)
     ff.create_folder(data_dir)
 
     # -------------------------------------------------------------------------
@@ -343,12 +328,12 @@ def update_stats(Sub_dir, j, r, usn, psw, eaddress, TrialsMax, Subject,
 
     all_dir = data_dir + "\\" + Teil_j_str + "_all.txt"
 
-    try:    # Is there already a Teil_j_all file?
+    try:  # Is there already a Teil_j_all file?
 
         Teil_j_all = np.loadtxt(all_dir)
         Teil_j_all = np.append(Teil_j_all, [r])
 
-    except Exception:   # or shall we create it?
+    except Exception:  # or shall we create it?
 
         Teil_j_all = np.array([r])
 
@@ -412,14 +397,13 @@ def update_stats(Sub_dir, j, r, usn, psw, eaddress, TrialsMax, Subject,
 
     # -------------------------------------------------------------------------
 
-    print "Stats updated!"
+    print("Stats updated!")
 
     return flag_blocked, flag_passed
 
 
 def check_final(Sub_dir, TotalTeils):
-
-    print "Total number of exercises: ", TotalTeils
+    print("Total number of exercises: ", TotalTeils)
 
     flag_final = 0
     data_dir = Sub_dir + "\\" + "data"
@@ -450,13 +434,12 @@ def check_final(Sub_dir, TotalTeils):
             passed[j] = 0
 
     if np.sum(passed) == jmax:
-
         flag_final = 1
 
     return flag_final
 
-def check_MNvalid(MN):
 
+def check_MNvalid(MN):
     # 0 for single value, 1 otherwise
 
     nk = len(MN)
@@ -465,14 +448,12 @@ def check_MNvalid(MN):
     for k in range(0, nk):
 
         if MN[k] != MN[0]:
-
             flag = 1
 
     return flag
 
 
 def count_different(MN):
-
     MN_red = np.unique(MN)
     k = len(MN_red)
 

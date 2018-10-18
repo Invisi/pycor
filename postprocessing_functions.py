@@ -20,27 +20,27 @@ Functions:
 
 """
 
-import os
 import csv
-import numpy as np
-import matplotlib.pyplot as plt
+import os
 
-import verification_functions as vf
+import matplotlib.pyplot as plt
+import numpy as np
+
 import folder_functions as ff
+import verification_functions as vf
+
 
 # --------------------------------------------------------------- CSV functions
 
 
 def generate_generalCSV(current_dir, jmax):
-
-    print "Generating the GeneralInfo.csv"
+    print("Generating the GeneralInfo.csv")
 
     # Created the headers: ----------------------------------------------------
     printable = []
     printable_new = ['Student', 'Matr. Num.', 'No. Matr. Num. used']
 
     for j in range(0, jmax):
-
         printable_new.append('Exercise ' + str(j + 1))
 
     printable.append(printable_new)
@@ -101,7 +101,7 @@ def generate_generalCSV(current_dir, jmax):
 
         printable.append(printable_new)
 
-    # print printable
+    # print(printable)
 
     # Save this data as a CSV file:
 
@@ -126,7 +126,7 @@ def generate_generalCSV(current_dir, jmax):
 
     except Exception:
 
-        print "Could not save: ", csv_dir_coma
+        print("Could not save: ", csv_dir_coma)
 
     # Create the 'semicolon' delimiter CSV
 
@@ -156,21 +156,19 @@ def generate_generalCSV(current_dir, jmax):
 
     except Exception:
 
-        print "Could not save: ", csv_dir_semicolon
+        print("Could not save: ", csv_dir_semicolon)
 
     return
 
 
 def generate_attemptsCSV(current_dir, jmax):
-
-    print "Generating the TotalAttempts.csv"
+    print("Generating the TotalAttempts.csv")
 
     # Created the headers: ----------------------------------------------------
     printable = []
     printable_new = ['Student', 'Matr. Num.', 'No. Matr. Num. used']
 
     for j in range(0, jmax):
-
         printable_new.append('Exercise ' + str(j + 1))
 
     printable.append(printable_new)
@@ -226,7 +224,7 @@ def generate_attemptsCSV(current_dir, jmax):
 
         printable.append(printable_new)
 
-    # print printable
+    # print(printable)
 
     # Save this data as a CSV file:
 
@@ -249,7 +247,7 @@ def generate_attemptsCSV(current_dir, jmax):
 
     except Exception:
 
-        print "Could not save: ", csv_dir_coma
+        print("Could not save: ", csv_dir_coma)
 
     # Create the 'semicolon' delimiter CSV
 
@@ -276,9 +274,10 @@ def generate_attemptsCSV(current_dir, jmax):
 
     except Exception:
 
-        print "Could not save: ", csv_dir_semicolon
+        print("Could not save: ", csv_dir_semicolon)
 
     return
+
 
 # --------------------------------------------------------------- txt functions
 
@@ -290,7 +289,7 @@ def check_MatNum(current_dir):
     access to a generated file '../_postprocessing/cheaters.txt' which the
     complete list of students."""
 
-    print "Generating cheaters.txt"
+    print("Generating cheaters.txt")
 
     # Access each students folder (but not all folders are from stundets,
     # i.e.: ../_postprocessing)
@@ -307,15 +306,14 @@ def check_MatNum(current_dir):
         try:
 
             MN = np.loadtxt(MatNum_dir)
-            flag = vf.check_MNvalid(MN)   # 0 for single value, 1 otherwise
+            flag = vf.check_MNvalid(MN)  # 0 for single value, 1 otherwise
 
             if flag == 1:
-
                 cheaters.append(dir)
 
         except Exception:
 
-            print "No MatNum in folder: ", current_dir + dir
+            print("No MatNum in folder: ", current_dir + dir)
 
     # Create the postprocessing directory
     # Remember: current_dir = profs + "\\" + dir + "\\"
@@ -336,23 +334,22 @@ def check_MatNum(current_dir):
 
     except Exception:
 
-        print "Could not save: ", cheaters_dir
+        print("Could not save: ", cheaters_dir)
 
     # np.savetxt(cheaters_dir, cheaters)
 
     return
 
+
 # ---------------------------------------------------------- Plotting functions
 
 
 def bars_all(current_dir, jmax):
-
-    print "Generating bars plot."
+    print("Generating bars plot.")
 
     bars_labels = []
 
     for j in range(0, jmax):
-
         bars_labels.append('Ex. ' + str(j + 1))
 
     # Created the headers: ----------------------------------------------------
@@ -394,7 +391,7 @@ def bars_all(current_dir, jmax):
 
                 pass
 
-    # print printable
+    # print(printable)
 
     # Save this data as a CSV file:
 
@@ -415,7 +412,7 @@ def bars_all(current_dir, jmax):
 
     plt.ylabel('Number of students')
 
-    plt.xticks(ind + width/2., bars_labels)
+    plt.xticks(ind + width / 2., bars_labels)
     ymax = np.max(np.asarray(total))
 
     # plt.yticks(np.arange(0, ymax + 2, 1))
@@ -435,7 +432,7 @@ def bars_all(current_dir, jmax):
 
     except Exception:
 
-        print "Could not save: ", bars_dir_png
+        print("Could not save: ", bars_dir_png)
 
     plt.clf()
 
@@ -443,13 +440,11 @@ def bars_all(current_dir, jmax):
 
 
 def hist_submissions(current_dir, jmax):
-
-    print "Generating histograms plot for number of submissions/exercise."
+    print("Generating histograms plot for number of submissions/exercise.")
 
     plot_labels = []
 
     for j in range(0, jmax):
-
         plot_labels.append('Exercise ' + str(j + 1))
 
     # -------------------------------------------------------------------------
@@ -478,7 +473,6 @@ def hist_submissions(current_dir, jmax):
                 sub = Teil_j_all.size
 
                 if max_sub < sub:
-
                     max_sub = sub
 
             except Exception:
@@ -600,36 +594,37 @@ def hist_submissions(current_dir, jmax):
 
             except Exception:
 
-                print "Could not save: ", bars_dir_png
+                print("Could not save: ", bars_dir_png)
 
     plt.clf()
 
     return
+
+
 # ---------------------------------------------------------------- full_analyze
 
 
 def full_analyze(current_dir, TotalTeils):
-
-    jmax = int(TotalTeils)    # number of exercises.
+    jmax = int(TotalTeils)  # number of exercises.
 
     # ----------------------------------------------------------- CSV functions
     # Generate the general CSV file (stundets, passed Teils)
-    print "____________"
+    print("____________")
     generate_generalCSV(current_dir, jmax)
 
     # Generate Total Attempts CSV file (students, all attempts)
-    print "____________"
+    print("____________")
     generate_attemptsCSV(current_dir, jmax)
 
     # ----------------------------------------------------------- txt functions
     # Check who copied (different MatNum, same student)
-    print "____________"
+    print("____________")
     check_MatNum(current_dir)
 
     # ------------------------------------------------------ Plotting functions
 
     # bars with all the passed/submitted exercises
-    print "____________"
+    print("____________")
     bars_all(current_dir, jmax)
     hist_submissions(current_dir, jmax)
 

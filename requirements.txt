@@ -1,0 +1,4 @@
+simple-crypt==4.1.7
+numpy==1.15.1
+matplotlib==3.0.0
+pywin32==224
