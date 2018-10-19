@@ -87,9 +87,9 @@ import imaplib  # To receive emails.
 import smtplib  # To send emails.
 import sys
 import time
-from email.header import decode_header
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import email.header
+import email.mime.multipart
+import email.mime.text
 
 import excel_functions as exf
 import folder_functions as ff
@@ -164,7 +164,7 @@ def send_email(usn, psw, eaddress, subj, msg):
 
     # Preparing the message
 
-    Message = MIMEMultipart('alternative')
+    Message = email.mime.multipart.MIMEMultipart('alternative')
     Message['From'] = usn
     Message['To'] = eaddress
     Message['Subject'] = subj
@@ -280,9 +280,9 @@ def check_single_att(msg, eaddress, Sub_dir):
         filename = part.get_filename()  # This is the name of the part
 
         try:
-            if decode_header(filename)[0][1] is not None:
-                filename = str(decode_header(filename)[0][0]).decode(
-                    decode_header(filename)[0][1])
+            if email.header.decode_header(filename)[0][1] is not None:
+                filename = str(email.header.decode_header(filename)[0][0]).decode(
+                    email.header.decode_header(filename)[0][1])
                 print("New name:")
                 print(filename)
         except Exception:
@@ -579,22 +579,22 @@ def generatehtmlmsg_Results(Number, names, resol, SubjectCorr):
     Message.close()
 
     nt = len(resol)
-    resultsPyCor = unicode('')
+    resultsPyCor = ''
 
     for i in range(0, nt):
 
         if resol[i] == 0:
 
-            resultsPyCor = unicode(resultsPyCor + '<tr><td>' +
-                                   names[i].encode('ascii', 'xmlcharrefreplace') + '</td>' +
-                                   '<td>' + '<font color="red">' + 'Falsch' +
-                                   '</font>' + '</td></tr>')
+            resultsPyCor = (resultsPyCor + '<tr><td>' +
+                            names[i].encode('ascii', 'xmlcharrefreplace') + '</td>' +
+                            '<td>' + '<font color="red">' + 'Falsch' +
+                            '</font>' + '</td></tr>')
             # print(resultsPyCor)
         else:
-            resultsPyCor = unicode(resultsPyCor + '<tr><td>' +
-                                   names[i].encode('ascii', 'xmlcharrefreplace') + '</td>' +
-                                   '<td>' + '<font color="green">' + 'Richtig'
-                                   + '</font>' + '</td></tr>')
+            resultsPyCor = (resultsPyCor + '<tr><td>' +
+                            names[i].encode('ascii', 'xmlcharrefreplace') + '</td>' +
+                            '<td>' + '<font color="green">' + 'Richtig'
+                            + '</font>' + '</td></tr>')
             # print(resultsPyCor)
         # resultsPyCor = resultsPyCor + '<tr><td>' + names[i] + '</td>' + \
         #                               '<td>' + str(resol[i]) + '</td></tr>'
@@ -630,7 +630,7 @@ def generatemsg_Results(Number, names, resol, usn, psw, eaddress):
 
     # Preparing the e-mail.
 
-    Message_R = MIMEText(msg)
+    Message_R = email.mime.text.MIMEText(msg)
     Message_R['From'] = usn
     Message_R['To'] = eaddress
     Message_R['Subject'] = subj

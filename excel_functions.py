@@ -73,19 +73,17 @@ Functions:
 import datetime
 import logging
 import os
-import time
 import traceback
 
 import numpy as np
 import pywintypes
 import simplecrypt
-from simplecrypt import decrypt
-from win32com import client
+import win32com.client
 
 import email_functions as emf
 import verification_functions as vf
 
-excel = client.Dispatch("Excel.Application")
+excel = win32com.client.Dispatch("Excel.Application")
 log = logging.getLogger('PyCor')
 
 
@@ -310,7 +308,7 @@ def corrector_ready(path):
         psw_file = open(os.path.join(path, 'psw'), 'r')
         psw_enc = psw_file.read()
         psw_file.close()
-        psw = decrypt('password', psw_enc)
+        psw = simplecrypt.decrypt('password', psw_enc)
     except IOError:
         pass
     except simplecrypt.DecryptionException:

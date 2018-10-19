@@ -12,7 +12,6 @@ in the remaining Python libraries prepared for PyCor.
 import logging
 import os
 import sys
-import time
 
 import simplecrypt
 
