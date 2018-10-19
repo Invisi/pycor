@@ -59,7 +59,7 @@ def generate_generalCSV(current_dir, jmax):
         printable_new = [dir]
 
         # r = np.zeros([jmax])
-        MatNum_dir = current_dir + dir + '\data\\' + 'MatNum.txt'
+        MatNum_dir = current_dir + dir + '\\data\\' + 'MatNum.txt'
 
         # Check how many MatNums have been used.
 
@@ -83,7 +83,7 @@ def generate_generalCSV(current_dir, jmax):
         for j in range(0, jmax):
 
             Teil_j_str = "Exercise" + str(j + 1)
-            all_j_dir = current_dir + dir + '\data\\' + Teil_j_str + "_all.txt"
+            all_j_dir = current_dir + dir + '\\data\\' + Teil_j_str + "_all.txt"
 
             try:
 
@@ -186,7 +186,7 @@ def generate_attemptsCSV(current_dir, jmax):
 
         printable_new = [dir]
 
-        MatNum_dir = current_dir + dir + '\data\\' + 'MatNum.txt'
+        MatNum_dir = current_dir + dir + '\\data\\' + 'MatNum.txt'
 
         # Check how many MatNums have been used.
 
@@ -209,7 +209,7 @@ def generate_attemptsCSV(current_dir, jmax):
         for j in range(0, jmax):
 
             Teil_j_str = "Exercise" + str(j + 1)
-            all_j_dir = current_dir + dir + '\data\\' + Teil_j_str + "_all.txt"
+            all_j_dir = current_dir + dir + '\\data\\' + Teil_j_str + "_all.txt"
 
             try:
 
@@ -301,7 +301,7 @@ def check_MatNum(current_dir):
 
     for dir in filtered_folders:
 
-        MatNum_dir = current_dir + dir + '\data\\' + 'MatNum.txt'
+        MatNum_dir = current_dir + dir + '\\data\\' + 'MatNum.txt'
 
         try:
 
@@ -371,7 +371,7 @@ def bars_all(current_dir, jmax):
         for j in range(0, jmax):
 
             Teil_j_str = "Exercise" + str(j + 1)
-            all_j_dir = current_dir + dir + '\data\\' + Teil_j_str + "_all.txt"
+            all_j_dir = current_dir + dir + '\\data\\' + Teil_j_str + "_all.txt"
 
             try:
 
@@ -465,7 +465,7 @@ def hist_submissions(current_dir, jmax):
         for j in range(0, jmax):
 
             Teil_j_str = "Exercise" + str(j + 1)
-            all_j_dir = current_dir + dir + '\data\\' + Teil_j_str + "_all.txt"
+            all_j_dir = current_dir + dir + '\\data\\' + Teil_j_str + "_all.txt"
 
             try:
 
@@ -496,7 +496,7 @@ def hist_submissions(current_dir, jmax):
         for j in range(0, jmax):
 
             Teil_j_str = "Exercise" + str(j + 1)
-            all_j_dir = current_dir + dir + '\data\\' + Teil_j_str + "_all.txt"
+            all_j_dir = current_dir + dir + '\\data\\' + Teil_j_str + "_all.txt"
 
             try:
 

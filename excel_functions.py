@@ -187,7 +187,9 @@ def check_allNone(exercise_k):
     n = len(exercise_k)
 
     for i in range(0, n):
-        if exercise_k[i] != None:
+        if exercise_k[i] == '-':
+            pass
+        elif exercise_k[i] is None:
             flag = 0  # allNone is false! One item is at least filled.
 
     return flag
