@@ -25,7 +25,7 @@ The flow chart of PyCor would be as follows:
 import os
 import time
 
-import auxiliar_functions as af
+import utils
 import config
 import email_functions as emf
 import excel_functions as exf
@@ -76,12 +76,12 @@ def main():
 
 
 if __name__ == '__main__':
-    log = af.setup_logger()
+    log = utils.setup_logger()
 
-    af.welcome(__version__)
+    utils.welcome(__version__)
 
     # Insert 'while' conditions here..
-    while af.system_checkout():
+    while utils.system_checkout():
         main()
         log.info("Wait %ss", delay)
         time.sleep(delay)

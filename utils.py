@@ -3,24 +3,11 @@
 """
 Copyright 2016, Daniel Valero and Daniel Bung, All rights reserved.
 
-'auxiliar_functions' is a complementary sub-library containing different
+'utils' is a complementary sub-library containing different
 functions created for the general PyCor super-library.
 
 This module is intended to provide some auxiliar functions which doesn't fit
 in the remaining Python libraries prepared for PyCor.
-
-Functions:
-
-    +Welcome(__version__):
-    This functions prints a Welcome message once PyCor is started. This
-    message includes information as: PyCor version and running time. The
-    printed message is only visible in the server where PyCor is running.
-
-    +NextFolder():
-    This function prints a message warning about the end of a folder by
-    PyCor. It does not require any input and the message is only visible in the
-    server where PyCor is running.
-
 """
 import logging
 import os
@@ -34,14 +21,12 @@ def welcome(__version__):
     """This functions prints a Welcome message once PyCor is started. This
     message includes information as: PyCor version and running time. The
     printed message is only visible in the server where PyCor is running."""
+    log = logging.getLogger('PyCor')
 
-    print("____________\n____________\nWelcome to PyCor v.", __version__)
-    print("Copyright 2016, Daniel Valero and Daniel Bung, All rights reserved.")
-    print("____________\n")
-    print("PyCor is now running!")
-    t_i = time.localtime()
-    print("Current date (Y, M, D): ", t_i[0], t_i[1], t_i[2])
-    print("Current time (h, m, s): ", t_i[3], t_i[4], t_i[5])
+    log.info("____________\n____________\nWelcome to PyCor v.", __version__)
+    log.info("Copyright 2016, Daniel Valero and Daniel Bung, All rights reserved.")
+    log.info("____________\n")
+    log.info("PyCor is now running!")
 
     return
 
