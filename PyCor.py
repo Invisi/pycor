@@ -26,9 +26,9 @@ import os
 import time
 
 import auxiliar_functions as af
+import config
 import email_functions as emf
 import excel_functions as exf
-import folder_functions as ff
 import postprocessing_functions as pf
 
 __version__ = "1.4"
@@ -38,67 +38,52 @@ delay = 15
 def main():
     """Invokes the correction function iteratively."""
 
-    af.Welcome(__version__)  # Prints message..
-
-    # We get Profs. directories.
-
-    folders = ff.get_profs()
-
-    # Iterating over the Profs. folders.
-
-    for profs in folders:
-
-        profs = profs[:-1]  # This deletes the line jump '\n'
-
-        print("Accessing folder:", profs)
+    # Iterate over configured folders
+    for prof_folder in config.FOLDERS:
+        prof_folder = os.path.abspath(prof_folder)
+        log.info("Accessing folder: %s", prof_folder)
 
         # Iterate over the subjects folders.
-
-        subf = os.listdir(profs)
-        print("Filtering the folders list.")
-        subf_filt = ff.filter_folders(profs + '\\', subf)
-
-        for dir in subf_filt:
-
-            current_dir = profs + "\\" + dir + "\\"
-            print("Accessing subfolder: ", current_dir)
+        for subject_folder in os.listdir(prof_folder):
+            current_dir = os.path.join(prof_folder, subject_folder)
+            if not os.path.isdir(current_dir) or subject_folder in config.FOLDER_IGNORE:
+                log.debug('Skipping %s', subject_folder)
+                continue
+            log.info("Accessing subfolder: %s", current_dir)
 
             # Is there a valid 'corrector.xlsx' file?
-            print("Checking if there is a valid corrector...")
-            [flag_corr, psw_corr, corr_path] = exf.corrector_ready(current_dir)
-            # corr_path = current_dir + 'corrector.xlsx'    # or other: 'xls'
+            log.info("Checking if there is a valid corrector...")
+            corr_path, psw_corr = exf.corrector_ready(current_dir)
 
             # Let's start with the correction process
-
-            if flag_corr == 1:
+            if corr_path and False:
                 # Get the important data from the corrector...
 
                 [Subject, usn, psw, TMax, TInit, TEnd, TotalTeils, Cerror] = \
                     exf.corrector_get_data(corr_path, psw_corr)
 
-                Subject = Subject.encode('utf-8', 'ignore')
-
-                print("Correcting: ", Subject)
-
+                log.info("Correcting: %s", Subject)
                 emf.check_INBOX(usn, psw, current_dir, corr_path, Subject,
                                 psw_corr, TotalTeils)
 
+                # TODO: Run in another thread/as another process
                 # Post processing only when a corrector is ready.
-
-                print("Producing postprocessing..")
+                log.info("Producing postprocessing..")
 
                 pf.full_analyze(current_dir, TotalTeils)
 
-            af.NextFolder()  # Prints message..
+            log.info("____________")
 
 
 if __name__ == '__main__':
+    log = af.setup_logger()
+
+    af.welcome(__version__)
 
     # Insert 'while' conditions here..
-
-    while af.system_checkout() == 1:
+    while af.system_checkout():
         main()
-        print("Wait (s)", delay)
+        log.info("Wait %ss", delay)
         time.sleep(delay)
     else:
         print("PyCor could not find the correct system setup and stopped.")

@@ -70,11 +70,15 @@ Functions:
     e-mail address 'eaddress'.
 
 """
-
+import datetime
+import logging
 import os
 import time
+import traceback
 
 import numpy as np
+import pywintypes
+import simplecrypt
 from simplecrypt import decrypt
 from win32com import client
 
@@ -82,6 +86,7 @@ import email_functions as emf
 import verification_functions as vf
 
 excel = client.Dispatch("Excel.Application")
+log = logging.getLogger('PyCor')
 
 
 # Functions related to the submitted 'exercise':
@@ -222,256 +227,104 @@ def exercise_check_submitted(TeilInit, TeilEnd, solutions):
 
 
 # Functions related to the 'corrector' file:
-
-def open_check(corr_path, psw):
-    flag = 0
-
-    try:
-
-        wb = excel.Workbooks.Open(corr_path, True, False, None, psw)
-
-        print("Correctly opened Excel file.")
-
-        ws1 = wb.Worksheets(1)  # Index = 1
-
-        SubjectName = ws1.Range("B1").Value
-        print("Correctely accessed Subject name.")
-        Expiration_Y = ws1.Range("D9").Value
-        Expiration_Y = int(Expiration_Y)
-        Expiration_M = ws1.Range("C9").Value
-        Expiration_M = int(Expiration_M)
-        Expiration_D = ws1.Range("B9").Value
-        Expiration_D = int(Expiration_D)
-        print("Correctly accessed deadline info.")
-        email_p1 = ws1.Range("B11").Value
-        email_p2 = ws1.Range("C11").Value
-        psw = ws1.Range("B12").Value
-        print("Correctly accessed email info.")
-        TrialsMax = ws1.Range("E12").Value
-        print("Correctly accessed Trials Max.")
-
-        wb.Close(SaveChanges=False)
-
-        flag = 1
-        print("Correctly checked access to the important cells.")
-
-    except Exception:
-
-        flag = 0
-
-        print("Invalid password, invalid corrector file or not access allowed.")
-
-    return flag
-
-
-def corrector_is_there(path, psw):
+def get_corrector_name(path):
     """This functions checks that a given 'path' there is a file named
-    corrector.xlsx. It is not inteded to check if the file fulfills the needs
+    corrector.xlsx. It is not intended to check if the file fulfills the needs
     for a complete correction, but may check that the important cells are
     accessible at least."""
 
-    # corr_path = path + 'corrector.xlsx'
     items = os.listdir(path)
-    flag = 0
+    extensions = ['xlsx', 'xlsm', 'xls']
 
-    if "corrector.xlsx" in items:
+    for item in items:
+        corr_path = os.path.join(path, item)
+        if os.path.isfile(corr_path) and any([item.endswith(x) for x in extensions]):
+            return corr_path
 
-        corr_path = path + 'corrector.xlsx'
-
-        flag = open_check(corr_path, psw)
-
-    elif "corrector.xlsm" in items:
-
-        corr_path = path + 'corrector.xlsm'
-
-        flag = open_check(corr_path, psw)
-
-    elif "corrector.xls" in items:
-
-        corr_path = path + 'corrector.xls'
-
-        flag = open_check(corr_path, psw)
-
-    else:
-
-        flag = 0
-        corr_path = ''
-        print("corrector.xlsx has not been found in the folder.")
-
-    return flag, corr_path
+    log.warning("corrector.xls* has not been found in the folder.")
+    return
 
 
-def corrector_checkout(path, psw):
-    """This function takes the "path" of the corrector file uploaded by a given
+def check_corrector(path, password):
+    # type: (str, str) -> bool
+    """
+    This function takes the "path" of the corrector file uploaded by a given
     Prof. and checks that everything is ready for correction! Four main checks
-    are carried out: 1. Name of the subject is specified, 2. Submission
-    deadline has not expired still, 3. Successful log in to the specified
-    e-mail address, and 4. Maximum number of attempts is over 1. This function
-    returns a flag called "flag_ALL" which checks that all previous flags have
-    been considered positively."""
+    are carried out:
+    1. Name of the subject is specified,
+    2. Submission deadline has not expired still,
+    3. Successful log in to the specified e-mail address, and
+    4. Maximum number of attempts is over 1.
+    This function returns a flag called "flag_ALL" which checks that all previous flags have
+    been considered positively.
+    """
 
-    # Open the Workbook and worksheet
-
-    wb = excel.Workbooks.Open(path, True, False, None, psw)
-    ws1 = wb.Worksheets(1)  # Index = 1
-
-    # General data to get,
-
-    # Name of the subject to correct:
-
-    SubjectName = ws1.Range("B1").Value
-
-    # Deadline:
-
-    Expiration_Y = ws1.Range("D9").Value
-    Expiration_Y = int(Expiration_Y)
-    Expiration_M = ws1.Range("C9").Value
-    Expiration_M = int(Expiration_M)
-    Expiration_D = ws1.Range("B9").Value
-    Expiration_D = int(Expiration_D)
-
-    # Associated e-mail address:
-
-    email_p1 = ws1.Range("B11").Value
-    email_p2 = ws1.Range("C11").Value
-    usn = email_p1 + email_p2  # p1: username, p2: @domain.
-    usn = usn.replace(' ', '')  # Delete the spaces apearing!
-    psw = ws1.Range("B12").Value
-
-    # Maximum number of trials:
-
-    TrialsMax = ws1.Range("E12").Value
-
-    # Let's check that the data extracted is coherent...
-
-    flag_1 = 1  # Associated to non null subject name.
-    flag_2 = 0  # Associated to not over the deadline.
-    flag_3 = 1  # Associated to successful e-mail log in.
-    flag_4 = 0  # Associated to valid number of maximum trials.
-
-    # Concerning flag_1:
-
-    print("\n____________")
+    # Open the workbook
+    wb = excel.Workbooks.Open(path, True, False, None, password)
+    ws1 = wb.Worksheets(1)
 
     try:
-        print("Subject: ", SubjectName)
+        subject_name = ws1.Range('B11').Value
 
-    except Exception:
+        day, month, year = (int(x) for x in ws1.Range('D9:B9').Value[0])
+        deadline = datetime.date(year, month, day)
 
-        # SubjectName = SubjectName.decode("utf-8")
-        SubjectName = SubjectName.encode('utf-8', 'ignore')
+        email = ''.join(ws1.Range('B11:C11').Value[0]).replace(' ', '')
+        email_password = ws1.Range('B12').Value
 
-    if SubjectName == None:
+        max_tries = ws1.Range('E12').Value
 
-        flag_1 = 0
-        print("Check 1: failed.")
-        print("Empty Subject name. Please specify a subject name!")
+        wb.Close(SaveChanges=False)
 
-    else:
-        print("Check 1: succeeded.")
-        print("Valid subject name: ", SubjectName)
+        # Check for valid subject name
+        if not subject_name:
+            log.error('Empty subject field in %s. Please specify a valid name.', path)
+            return False
 
-    # Concerning flag_2:
+        # Check deadline, allow for same-day submissions
+        if (deadline - datetime.date.today()).days < 0:
+            log.info('Ignoring %s due to deadline (%s)', path, deadline)
+            return False
 
-    t_i = time.localtime()
+        if emf.check_login(email, email_password) != 1:
+            log.error('Invalid login data for %s', path)
+            return False
 
-    print("____________")
+        if max_tries < 1:
+            log.error('Invalid number of max tries')
+            return False
 
-    if t_i[0] < Expiration_Y:
-
-        flag_2 = 1
-        print("Check 2: succeeded.")
-        print("Still some remaining time before deadline expiration.")
-        print("Current date: ", t_i[0], t_i[1], t_i[2])
-        print("Deadline: ", Expiration_Y, Expiration_M, Expiration_D)
-
-    elif t_i[0] == Expiration_Y:
-        if t_i[1] < Expiration_M:
-
-            flag_2 = 1
-            print("Check 2: succeeded.")
-            print("Still some remaining time before deadline expiration.")
-            print("Current date: ", t_i[0], t_i[1], t_i[2])
-            print("Deadline: ", Expiration_Y, Expiration_M, Expiration_D)
-
-        elif t_i[1] == Expiration_M:
-            if t_i[2] <= Expiration_D:
-                flag_2 = 1
-                print("Check 2: succeeded.")
-                print("Still some remaining time before deadline expiration.")
-                print("Current date: ", t_i[0], t_i[1], t_i[2])
-                print("Deadline: ", Expiration_Y, Expiration_M, Expiration_D)
-    else:
-
-        print("Check 2: failed.")
-        print("Due to deadline, no new submissions will be considered!")
-
-    # Concerning flag_3:
-
-    print("____________")
-    print("Trying to log in to: ", usn)
-    flag_3 = emf.check_login(usn, psw)
-    if flag_3 == 1:
-        print("Check 3: succeeded.")
-    else:
-        print("Check 3: failed.")
-
-    # Concerning flag_4:
-    print("____________")
-    if TrialsMax >= 1:
-        flag_4 = 1
-        print("Check 4: succeeded.")
-        print("Maximum number of trials: ", TrialsMax)
-    else:
-        print("Check 4: failed.")
-        print("Maximum number of trials is not valid: ", TrialsMax)
-
-    print("____________")
-
-    flag_ALL = flag_1 * flag_2 * flag_3 * flag_4
-
-    # Close the Workbook before exit
-
-    wb.Close(SaveChanges=False)
-
-    return flag_ALL
-
-
-def get_psw(path):
-    psw_path = path + 'psw'
-
-    try:
-
-        psw_file = open(psw_path, 'r')
-        psw_enc = psw_file.read()
-        psw_file.close()
-
-        psw = decrypt('password', psw_enc)
-
-    except Exception:
-
-        psw = ''
-
-    return psw
+        return True
+    except pywintypes.com_error:
+        traceback.print_exc()
+        return False
 
 
 def corrector_ready(path):
     """This function combines 'corrector_is_there()' and 'corrector_checkout()'
     to make sure there is a valid 'corrector.xlsx' file in a given folder
     'path'. Returns a flag, taking value 1 if everything is ready."""
+    # Grab password
+    psw = ''
+    try:
+        psw_file = open(os.path.join(path, 'psw'), 'r')
+        psw_enc = psw_file.read()
+        psw_file.close()
+        psw = decrypt('password', psw_enc)
+    except IOError:
+        pass
+    except simplecrypt.DecryptionException:
+        log.error('Failed to decrypt psw for %s', path)
+        log.error(traceback.format_exc())
+        return False, '', ''
 
     # Check that corrector.xlsx is there...
+    corr_path = get_corrector_name(path)
 
-    psw = get_psw(path)
-    [flag, corr_path] = corrector_is_there(path, psw)
-
-    # ...and check that it's content is adequate!
-
-    if flag == 1:
-        # corr_path = path + "corrector.xlsx"
-        flag = corrector_checkout(corr_path, psw)
-
-    return flag, psw, corr_path
+    # ...and check that its content is adequate!
+    if corr_path and check_corrector(corr_path, psw):
+        return corr_path, psw
+    return None, psw
 
 
 def corrector_get_data(corrector_path, psw):
@@ -590,7 +443,7 @@ def exerinfo_copy(MatNum, dummies, corr_path, psw_corr):
             break
 
         Teil.append(ws1.Range('A' + str(index_num)).Value)
-        varNames.append(unicode(ws1.Range('B' + str(index_num)).Value))
+        varNames.append(ws1.Range('B' + str(index_num).Value))
 
         # print((varNames))
 

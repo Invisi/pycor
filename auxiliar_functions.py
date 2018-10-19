@@ -22,13 +22,15 @@ Functions:
     server where PyCor is running.
 
 """
-
+import logging
+import os
+import sys
 import time
 
-from simplecrypt import decrypt
+import simplecrypt
 
 
-def Welcome(__version__):
+def welcome(__version__):
     """This functions prints a Welcome message once PyCor is started. This
     message includes information as: PyCor version and running time. The
     printed message is only visible in the server where PyCor is running."""
@@ -44,44 +46,39 @@ def Welcome(__version__):
     return
 
 
-def NextFolder():
-    """This function prints a message warning about the end of a folder by
-    PyCor. It does not require any input and the message is only visible in the
-    server where PyCor is running."""
+def setup_logger():
+    log = logging.getLogger('PyCor')
+    log.setLevel(logging.DEBUG)
 
-    print("____________")
-    print("Next folder")
-    print("____________\n____________\n")
-
-    return
+    # hldr = logging.FileHandler('PyCor.log')
+    fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+    # hldr.setFormatter(fmt)
+    # log.addHandler(hldr)
+    stream = logging.StreamHandler(sys.stdout)
+    stream.setFormatter(fmt)
+    log.addHandler(stream)
+    return log
 
 
 def system_checkout():
     path = 'C:\\Windows\\dava'
-    # path = 'C:\\Users\\Usuario\\dava'
+
+    if os.environ.get('ENV', '') == 'DEVELOPMENT':
+        return True
 
     try:
-
         system_file = open(path, 'r')
         system_file_enc = system_file.read()
         system_file.close()
 
-        system_file_dec = decrypt('license', system_file_enc)
+        system_file_dec = simplecrypt.decrypt('license', system_file_enc)
 
         print("Decrypted: ", system_file_dec)
 
         if system_file_dec == 'OK':
-
             print("System is ready for PyCor.")
-            flag = 1
-
-        else:
-
-            print("System is not ready for PyCor.")
-            flag = 0
-
-    except Exception:
-
-        flag = 0
-
-    return flag
+            return True
+        print("System is not ready for PyCor.")
+        return False
+    except (IOError, simplecrypt.DecryptionException):
+        return False
