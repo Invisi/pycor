@@ -30,9 +30,9 @@ def welcome(__version__):
     return
 
 
-def setup_logger():
+def setup_logger(level=logging.DEBUG):
     log = logging.getLogger('PyCor')
-    log.setLevel(logging.DEBUG)
+    log.setLevel(level)
 
     # hldr = logging.FileHandler('PyCor.log')
     fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
@@ -40,6 +40,7 @@ def setup_logger():
     # log.addHandler(hldr)
     stream = logging.StreamHandler(sys.stdout)
     stream.setFormatter(fmt)
+    stream.setLevel(level)
     log.addHandler(stream)
     return log
 
