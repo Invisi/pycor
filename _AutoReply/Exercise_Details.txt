@@ -1,4 +1,3 @@
-PyCor
 <table>
   <tr>
     <th>Variable</th>
@@ -7,3 +6,4 @@ PyCor
 PrintResults
   </tr>
 </table>
+<hr/>
