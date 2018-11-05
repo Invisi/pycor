@@ -182,7 +182,7 @@ class ExcelCorrector(Excel):
             psw_file = open(self.subject_folder / 'psw', 'r')
             psw_enc = psw_file.read()
             psw_file.close()
-            return simplecrypt.decrypt('password', psw_enc)  # TODO: Replace hard-coded password
+            return simplecrypt.decrypt(config.PSW_PASSPHRASE, psw_enc)
         except IOError:  # psw file doesn't exist
             return ''
         except simplecrypt.DecryptionException:  # Decryption failed, ignore corrector file
