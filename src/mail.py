@@ -8,9 +8,10 @@ import os
 import smtplib
 import traceback
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 import config
+from utils import write_error
 
 
 def choose_server(usn):
@@ -42,45 +43,48 @@ class LoginException(BaseException):
 
 
 class Mail:
-    def __init__(self, username: str, password: str, subject_folder: Path):
+    def __init__(self, username: str, password: str, subject_folder: Path, subject_name: str):
         self.log = logging.getLogger('PyCor').getChild('Mail')
 
         self.username = username
         self.password = password
         self.subject_folder = subject_folder
+        self.subject_name = subject_name
 
         self.imap = None
         self.smtp = None
 
         # Login
-        imap, smtp = choose_server(self.username)
+        self.imap_server, self.smtp_server = choose_server(self.username)
         try:
-            self.imap = imaplib.IMAP4_SSL(imap)
+            self.imap = imaplib.IMAP4_SSL(self.imap_server)
             self.imap.login(self.username, self.password)
             self.imap.select('INBOX')
         except imaplib.IMAP4.error:
-            self.log.error(traceback.format_exc())
-            raise LoginException
-
-        try:
-            self.smtp = smtplib.SMTP_SSL(smtp)
-            self.smtp.login(self.username, self.password)
-        except smtplib.SMTPException:
+            write_error(self.subject_folder, 'Fehler beim Zugriff auf das E-Mail-Konto: \n' + traceback.format_exc())
             self.log.error(traceback.format_exc())
             raise LoginException
 
         self.log.info('%s - Successfully logged in', username)
 
+    def smtp_login(self):
+        try:
+            self.smtp = smtplib.SMTP_SSL(self.smtp_server)
+            self.smtp.login(self.username, self.password)
+        except smtplib.SMTPException:
+            self.log.error(traceback.format_exc())
+            raise LoginException
+
     def smtp_logout(self):
         if self.smtp:
             self.smtp.quit()
 
-    def check_inbox(self) -> Optional[dict]:
+    def check_inbox(self) -> Optional[list]:
         search_str = '(SEEN)' if config.DEBUG else '(UNSEEN)'
         ret, message_str = self.imap.search(None, search_str)
 
         if ret == 'OK':
-            corr_files = {}
+            corr_files = []
             message_ids = message_str[0].split()
             for message_id in message_ids:
                 # In theory this could fail IF someone deletes the message before it is fetched.
@@ -99,16 +103,16 @@ class Mail:
                     downloaded_file = self.download_attachment(msg, student_email)
 
                     if downloaded_file:
-                        if student_email not in corr_files:
-                            corr_files[student_email] = []
-                        corr_files[student_email].append(downloaded_file)
+                        corr_files.append(downloaded_file)
 
                     # No file, multiple files or invalid file
-                    # TODO: Notify student
                     if not downloaded_file:
+                        # Notify student about missing file
+                        self.send(student_email, *Generator.invalid_attachment(self.subject_name))
                         pass
                 else:
-                    # TODO: Notify sender about wrong email address
+                    # Notify sender about wrong email address
+                    self.send(student_email, *Generator.wrong_address(self.subject_name))
                     pass
             else:
                 self.log.info('%s - No new mail', self.username)
@@ -119,6 +123,7 @@ class Mail:
         """
         Downloads attachment and returns the full path to it.
         If there are multiple or no attachments None is returned.
+
         :param msg: Message
         :param student_email: Student's email address
         :return: Full path to downloaded file OR None
@@ -163,9 +168,6 @@ class Mail:
 
             self.log.debug('Saved file to %s', os.sep.join(file_path.parts[-3:]))
 
-            # TODO: Check if file can be opened by excel, might want to do that in the correction procedure
-            # if exf.check_exercise(file_path):
-            #    return file_path
             return file_path
         else:
             self.log.warning('Got more than one or no attachment(s) at all!')
@@ -179,11 +181,16 @@ class Mail:
 
         # Don't send emails if in debug mode
         if config.DEBUG:
-            self.log.debug(content)
+            self.log.debug('sending mail: %s', content)
             return
-
-        msg.attach(email.mime.text.MIMEText(content, 'html', 'utf-8'))
-        self.smtp.sendmail(self.username, recipient, msg.as_bytes())
+        try:
+            self.smtp_login()
+            msg.attach(email.mime.text.MIMEText(content, 'html', 'utf-8'))
+            self.smtp.sendmail(self.username, recipient, msg.as_bytes())
+            self.smtp_logout()
+        except LoginException:
+            self.log.error('Failed to send mail to %s', recipient)
+            raise
 
 
 class Generator:
@@ -207,6 +214,11 @@ class Generator:
     @staticmethod
     def invalid_attachment(subject_name: str) -> tuple:
         with Generator('Invalid_Attachment') as c:
+            return c.subject, c.content.replace('SUBJECT', subject_name)
+
+    @staticmethod
+    def error_processing(subject_name: str) -> tuple:
+        with Generator('Error_Processing') as c:
             return c.subject, c.content.replace('SUBJECT', subject_name)
 
     @staticmethod

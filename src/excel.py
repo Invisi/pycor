@@ -9,6 +9,7 @@ import pywintypes
 import simplecrypt
 import win32com.client
 
+import config
 import mail
 
 
@@ -128,7 +129,7 @@ class ExcelCorrector(Excel):
             email_password = ws.Range('B12').Value
             # Login to mail account
             try:
-                self.email = mail.Mail(email, email_password, self.subject_folder)
+                self.email = mail.Mail(email, email_password, self.subject_folder, self.subject_name)
             except mail.LoginException:
                 self.log.error('Invalid login data for %s', self.get_relevant_path())
                 self.log.error(traceback.format_exc())
@@ -145,6 +146,7 @@ class ExcelCorrector(Excel):
         Generates mat_num- and dummy-specific solutions and returns them in a two-dimensional list
         with the first dimension being the exercise and the second one containing
         the solution's name, value, and tolerance.
+
         :param mat_num: Student's matriculation number
         :param dummies: List of dummy values (a1-a100)
         :return:
@@ -194,13 +196,15 @@ class ExcelCorrector(Excel):
     def from_subject_folder(subject_folder: Path) -> Optional['ExcelCorrector']:
         extensions = ['.xlsx', '.xlsm', '.xls']
 
-        # TODO: Mark folder as ignored via PYCOR_ERROR.txt or PYCOR_IGNORE.txt
+        # Ignore folders containing the ignore file
+        ignore_file = subject_folder / 'PYCOR_IGNORE.txt'
+        if ignore_file.exists():
+            return
 
         for item in subject_folder.iterdir():
             if item.is_file() and item.suffix in extensions:
                 return ExcelCorrector(item)
-        return None
-
+        return
 
 class ExcelStudent(Excel):
     def __init__(self, excel_file: Path):
@@ -227,10 +231,12 @@ class ExcelStudent(Excel):
 
             self.set_exercise_rows(ws, solutions=True)
         except (pywintypes.com_error, TypeError, ValueError):
-            # TODO: AttributeError: 'NoneType' object has no attribute 'Worksheets'
-            #  => self.excel got lost somewhere, reassign
             self.log.error(traceback.format_exc())
-            # raise CorrectorException('Failed to read relevant info')
+            raise ExcelFileException('Failed to read relevant info')
+        except AttributeError:
+            self.log.error(traceback.format_exc())
+            self.log.error('Looks like excel crashed. Let\'s quit.')
+            raise
         finally:
             if wb:
                 wb.Close(SaveChanges=False)

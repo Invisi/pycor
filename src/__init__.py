@@ -10,7 +10,10 @@ import numpy as np
 import config
 import excel
 import mail
+import post
 import utils
+
+__version__ = '1.5.0'
 
 
 def compare(attempt: float or str, solution: float or str, tolerance: int or float):
@@ -77,6 +80,7 @@ def get_stats(student_folder: Path, exercise: int, max_tries: int) -> tuple:
 def update_stats(student_folder: Path, exercise: int, correct_perc: int, max_tries: int, mat_num: int) -> tuple:
     """
     Updates and saves the student's statistics
+
     :param student_folder: Full path to student's folder
     :param exercise: Exercise number [beginning at 0]
     :param correct_perc: Percentage of correctly answered sub tasks
@@ -144,7 +148,7 @@ def main():
 
         # Iterate over the subjects folders.
         for subject_folder in prof_folder.iterdir():
-            if not subject_folder.is_dir() or subject_folder in config.FOLDER_IGNORE:
+            if not subject_folder.is_dir() or subject_folder.name in config.FOLDER_IGNORE:
                 log.debug('Skipping %s', subject_folder)
                 continue
             log.debug("Accessing subfolder: %s", subject_folder)
@@ -154,10 +158,10 @@ def main():
                 exc = excel.ExcelCorrector.from_subject_folder(subject_folder)
                 if exc:
                     student_files = exc.email.check_inbox()
-                    for student in student_files:
+                    for s_file in student_files:
+                        student_email = s_file.parent.name
                         try:
-                            # TODO: VALIDATE student's file
-                            e = excel.ExcelStudent(student)
+                            e = excel.ExcelStudent(s_file)
 
                             passed_exercises = 0
 
@@ -178,7 +182,6 @@ def main():
                                     exc.email.send(e.student_email,
                                                    *mail.Generator.exercise_blocked(exc.subject_name, exercise_idx,
                                                                                     exc.max_tries))
-                                    # TODO: Notify about block
                                     continue
                                 if passed:
                                     passed_exercises += 1
@@ -187,7 +190,7 @@ def main():
                                               e.student_email)
                                     continue
 
-                                log.debug('Processing exercise %s for %s', exercise_idx + 1, student)
+                                log.debug('Processing exercise %s for %s', exercise_idx + 1, e.student_email)
 
                                 corrector_solution = real_solutions[exercise_idx]
                                 # type: dict
@@ -195,7 +198,7 @@ def main():
                                 if len(student_solution) != len(corrector_solution):
                                     log.warning(
                                         '%s may have tampered with the excel file, got different amount of sub '
-                                        'exercises for exercise %s', student, exercise_idx + 1)
+                                        'exercises for exercise %s', e.student_email, exercise_idx + 1)
                                     continue
 
                                 # Vector for single exercise
@@ -226,7 +229,9 @@ def main():
                             for solution in compared_solutions:
                                 results += mail.Generator.exercise_details(solution)
 
-                            exc.email.send(e.student_email, 'Ergebnisse: {}'.format(exc.subject_name), results)
+                            # May be empty if nothing was submitted
+                            if len(results) > 0:
+                                exc.email.send(e.student_email, 'Ergebnisse: {}'.format(exc.subject_name), results)
 
                             # Send final congrats
                             if passed_exercises == len(real_solutions):
@@ -235,18 +240,23 @@ def main():
 
                         except excel.ExcelFileException:
                             log.warning(traceback.format_exc())
-                            # TODO: Tell student about the error, don't give the traceback
+                            log.error('Error during processing of %s', s_file.parts[-3:])
+                            exc.email.send(student_email, *mail.Generator.error_processing(exc.subject_name))
                         except IOError:
                             log.error(traceback.format_exc())
-                            log.error('Error during processing of %s', student)
+                            log.error('Error during processing of %s', s_file.parts[-3:])
+                            exc.email.send(student_email, *mail.Generator.error_processing(exc.subject_name))
                             raise  # Fail securely
 
-                    exc.destroy()  # TODO: Destroy after reading data?
+                    exc.destroy()
+
+                    # Run post processing if we got new submissions
+                    if len(student_files) > 0:
+                        post.PostProcessing(subject_folder, len(exc.exercise_ranges)).run()
                 else:
                     log.debug('Ignoring folder %s due to missing corrector file', subject_folder)
             except excel.ExcelFileException:
                 log.debug(traceback.format_exc())
-                pass
 
             log.info("____________")
             time.sleep(config.DELAY_MAILBOXES)
@@ -254,4 +264,9 @@ def main():
 
 if __name__ == '__main__':
     log = utils.setup_logger(logging.DEBUG if config.DEBUG else logging.INFO)
+
+    log.info("Welcome to PyCor v.%s", __version__)
+    log.info('____________')
+    log.info("PyCor is now running!")
+
     main()
