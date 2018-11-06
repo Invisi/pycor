@@ -15,16 +15,16 @@ def setup_logger(level=logging.DEBUG):
         Path('logs').mkdir()
 
     log = logging.getLogger('PyCor')
-    log.setLevel(level)
-
-    hldr = logging.handlers.TimedRotatingFileHandler('logs/PyCor.log', when='midnight', encoding='utf-8',
-                                                     backupCount=16)
     fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+
+    hldr = logging.handlers.TimedRotatingFileHandler('logs/PyCor.log', when='W0', encoding='utf-8', backupCount=16)
     hldr.setFormatter(fmt)
+    hldr.setLevel(logging.DEBUG)
     log.addHandler(hldr)
+
     stream = logging.StreamHandler(sys.stdout)
     stream.setFormatter(fmt)
-    stream.setLevel(logging.DEBUG)
+    stream.setLevel(level)
     log.addHandler(stream)
     return log
 
