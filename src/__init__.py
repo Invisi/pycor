@@ -7,7 +7,6 @@ from pathlib import Path
 
 import numpy as np
 
-import config
 import excel
 import mail
 import post
@@ -269,6 +268,9 @@ def main():
 
 
 if __name__ == '__main__':
+    # Import config
+    config = utils.import_config()
+
     log = utils.setup_logger(logging.DEBUG if config.DEBUG else logging.INFO)
 
     log.info("Welcome to PyCor v.%s", __version__)

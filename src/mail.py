@@ -10,8 +10,9 @@ import traceback
 from pathlib import Path
 from typing import Optional
 
-import config
-from utils import write_error
+import utils
+
+config = utils.import_config()
 
 
 def choose_server(usn):
@@ -61,7 +62,8 @@ class Mail:
             self.imap.login(self.username, self.password)
             self.imap.select('INBOX')
         except imaplib.IMAP4.error:
-            write_error(self.subject_folder, 'Fehler beim Zugriff auf das E-Mail-Konto: \n' + traceback.format_exc())
+            utils.write_error(self.subject_folder,
+                              'Fehler beim Zugriff auf das E-Mail-Konto: \n' + traceback.format_exc())
             self.log.error(traceback.format_exc())
             raise LoginException
 
@@ -252,5 +254,4 @@ class Generator:
                                                     'Richtig' if solved else 'Falsch')
 
             return 'Detaillierte Ergebnisse: <b>Teilaufgabe {}</b><br/><br/>'.format(
-                solution['exercise'] + 1) + c.content.replace(
-                'PrintResults', ret)
+                solution['exercise'] + 1) + c.content.replace('PrintResults', ret)

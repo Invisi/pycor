@@ -48,6 +48,25 @@ def write_error(subject_folder: Path, message: str):
         e.write('{} - Delete this file once the error specified in PYCOR_ERROR.txt is fixed.\n'.format(dt))
 
 
+def import_config():
+    # Import config in exe created by PyInstaller
+    if getattr(sys, 'frozen', False):
+        import importlib.util
+
+        config_file = Path(sys.executable).parent / 'config.py'
+        if not config_file.exists():
+            print('config.py is missing!')
+            input('Press return to exit.')
+            sys.exit(1)
+
+        spec = importlib.util.spec_from_file_location('config', config_file)
+        config = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(config)
+    else:
+        import config
+    return config
+
+
 def system_checkout():
     # TODO: Implement
     path = 'C:\\Windows\\dava'

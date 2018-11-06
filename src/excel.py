@@ -9,8 +9,10 @@ import pywintypes
 import simplecrypt
 import win32com.client
 
-import config
 import mail
+import utils
+
+config = utils.import_config()
 
 
 class ExcelFileException(Exception):
@@ -208,6 +210,7 @@ class ExcelCorrector(Excel):
             if item.is_file() and item.suffix in extensions:
                 return ExcelCorrector(item)
         return
+
 
 class ExcelStudent(Excel):
     def __init__(self, excel_file: Path):
