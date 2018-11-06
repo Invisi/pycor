@@ -80,8 +80,7 @@ class Mail:
             self.smtp.quit()
 
     def check_inbox(self) -> Optional[list]:
-        search_str = '(SEEN)' if config.DEBUG else '(UNSEEN)'
-        ret, message_str = self.imap.search(None, search_str)
+        ret, message_str = self.imap.search(None, '(SEEN)')
 
         if ret == 'OK':
             corr_files = []
@@ -90,6 +89,11 @@ class Mail:
                 # In theory this could fail IF someone deletes the message before it is fetched.
                 # This should just result in an empty mail however.
                 _, data = self.imap.fetch(message_id, '(RFC822)')
+
+                # Keep mail as unread if in debug mode
+                if config.DEBUG:
+                    self.imap.store(message_id, '-FLAGS', '\\Seen')
+
                 msg = email.message_from_bytes(data[0][1])
 
                 self.log.info('%s - Processing message %s from %s (%s)', self.username, message_id.decode('utf-8'),
