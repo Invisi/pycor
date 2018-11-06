@@ -233,6 +233,12 @@ def main():
                             if len(results) > 0:
                                 exc.email.send(e.student_email, 'Ergebnisse: {}'.format(exc.subject_name), results)
 
+                            for exercise in compared_solutions:
+                                if exercise['passed']:
+                                    exc.email.send(e.student_email,
+                                                   *mail.Generator.exercise_passed(exc.subject_name,
+                                                                                   exercise['exercise']))
+
                             # Send final congrats
                             if passed_exercises == len(real_solutions):
                                 exc.email.send(e.student_email,

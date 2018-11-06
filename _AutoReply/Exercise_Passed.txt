@@ -1,7 +1,7 @@
 <html>
     <p>
     Liebe(r) Studierende(r),<br> <br>
-    Sie haben <b>EXERCISES erfolgreich geloest</b>! Herzlichen Glueckwunsch! Bitte drucken Sie diese Email aus und
+    Sie haben <b>Aufgabe EXERCISE_NO erfolgreich geloest</b>! Herzlichen Glueckwunsch! Bitte drucken Sie diese Email aus und
     legen Sie sie zur Testatunterzeichnung zusammen mit Ihrer handschriftlichen Loesung vor.
     </p>
 

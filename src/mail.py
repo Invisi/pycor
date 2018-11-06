@@ -226,9 +226,9 @@ class Generator:
             return c.subject, c.content.replace('SUBJECT', subject_name)
 
     @staticmethod
-    def exercise_passed(subject_name: str, exercise: int, mat_num: int) -> tuple:
+    def exercise_passed(subject_name: str, exercise: int) -> tuple:
         with Generator('Exercise_Passed') as c:
-            return c.subject, c.content.replace('SUBJECT', subject_name)
+            return c.subject, c.content.replace('SUBJECT', subject_name).replace('EXERCISE_NO', str(exercise + 1))
 
     @staticmethod
     def exercise_blocked(subject_name: str, exercise: int, max_tries: int) -> tuple:
