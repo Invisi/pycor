@@ -24,7 +24,7 @@ def setup_logger(level=logging.DEBUG):
     log.addHandler(hldr)
     stream = logging.StreamHandler(sys.stdout)
     stream.setFormatter(fmt)
-    stream.setLevel(level)
+    stream.setLevel(logging.DEBUG)
     log.addHandler(stream)
     return log
 
