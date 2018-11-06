@@ -22,7 +22,10 @@ class Excel:
         self.log = logging.getLogger('PyCor').getChild('Excel')
 
         self.excel = win32com.client.Dispatch('Excel.Application')
-        self.excel.Visible = True
+
+        if config.DEBUG_SHOW_EXCEL:
+            self.excel.Visible = True
+
         self.excel.DisplayAlerts = False  # "Do you want to save your work?"
         self.excel.AskToUpdateLinks = False  # Links = Copied values from another sheet, we might want to detect those
         self.excel_file = excel_file
