@@ -82,7 +82,7 @@ class Mail:
             self.smtp.quit()
 
     def check_inbox(self) -> Optional[list]:
-        ret, message_str = self.imap.search(None, '(SEEN)')
+        ret, message_str = self.imap.search(None, '(UNSEEN)')
 
         if ret == 'OK':
             corr_files = []
@@ -120,7 +120,7 @@ class Mail:
                     # Notify sender about wrong email address
                     self.send(student_email, *Generator.wrong_address(self.subject_name))
                     pass
-            else:
+            if len(message_ids) == 0:
                 self.log.info('%s - No new mail', self.username)
 
             return corr_files
