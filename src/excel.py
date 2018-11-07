@@ -25,7 +25,7 @@ class Excel:
 
         self.excel = win32com.client.Dispatch('Excel.Application')
 
-        if config.DEBUG_SHOW_EXCEL:
+        if config.SHOW_EXCEL:
             self.excel.Visible = True
 
         self.excel.DisplayAlerts = False  # "Do you want to save your work?"

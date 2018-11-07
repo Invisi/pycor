@@ -4,10 +4,12 @@ FOLDERS = [
     'test\\folder 2'
 ]
 
-# Sets console output level, disables mail sending
+# Sets console output level, default is INFO. Disables flagging mails as read
 DEBUG = False
+# Disable mail sending
+DISABLE_OUTGOING_MAIL = True
 # Make excel visible during processing
-DEBUG_SHOW_EXCEL = False
+SHOW_EXCEL = False
 
 # Delay (in s) between mailbox logins
 DELAY_MAILBOXES = 15

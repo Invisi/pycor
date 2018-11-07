@@ -186,7 +186,7 @@ class Mail:
         msg['Subject'] = subject
 
         # Don't send emails if in debug mode
-        if config.DEBUG:
+        if config.DISABLE_OUTGOING_MAIL:
             self.log.debug('sending mail: %s', content)
             return
         try:
