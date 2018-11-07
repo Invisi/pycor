@@ -277,4 +277,9 @@ if __name__ == '__main__':
     log.info('____________')
     log.info("PyCor is now running!")
 
-    main()
+    while True:
+        main()
+
+        # Wait 5 minutes between each run
+        log.info('Pausing for 5 minutes')
+        time.sleep(60 * 5)
