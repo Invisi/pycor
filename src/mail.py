@@ -201,7 +201,7 @@ class Mail:
 
 class Generator:
     def __init__(self, name: str, subject=True):
-        reply = (Path(__file__).parent / '..' / '_AutoReply').resolve()
+        reply = (Path(__file__).parent / '_AutoReply').resolve()
         self.content = (reply / '{}.txt'.format(name)).read_text()
         if subject:
             self.subject = (reply / '{}_s.txt'.format(name)).read_text()
