@@ -3,6 +3,8 @@ import datetime
 import logging
 import logging.handlers
 import os
+import random
+import string
 import sys
 from pathlib import Path
 
@@ -76,6 +78,10 @@ def import_config():
     else:
         import config
     return config
+
+
+def random_string():
+    return ''.join(random.choices(string.digits + string.ascii_letters, k=6))
 
 
 def system_checkout():

@@ -163,11 +163,11 @@ class Mail:
         if len(valid_files) == 1:
             # Finally save file in proper folder
             valid_file = valid_files[0]
-            _, extension = os.path.splitext(valid_file.get_filename())
+            basename, extension = os.path.splitext(valid_file.get_filename())
 
             # TODO: Use msg['Date'] if available? Might falsify real submit date/time
-            file_path = user_dir / (datetime.datetime.strftime(datetime.datetime.now(),
-                                                               '%Y-%m-%d %H.%M.%S') + extension)
+            dt = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H.%M.%S')
+            file_path = user_dir / '{}_{}{}'.format(dt, utils.random_string(), extension)
 
             with file_path.open('wb') as fp:
                 fp.write(valid_file.get_payload(decode=True))
