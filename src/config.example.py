@@ -14,6 +14,9 @@ SHOW_EXCEL = False
 # Delay (in s) between mailbox logins
 DELAY_MAILBOXES = 15
 
+# Delay (in m) between main loop
+DELAY_SLEEP = 2
+
 # Passphrase for corrector pws files
 PSW_PASSPHRASE = 'password'
 
