@@ -162,12 +162,14 @@ def main():
                         try:
                             e = excel.ExcelStudent(s_file)
 
-                            passed_exercises = 0
-
                             real_solutions = exc.generate_solutions(e.mat_num, e.dummies)
                             e.destroy()
 
                             compared_solutions = []
+
+                            # List of passed/blocked exercises
+                            exercises_blocked = []
+                            exercises_passed = []
                             for exercise_idx, student_solution in enumerate(e.solutions):
                                 # Ignore exercise if one of the fields is empty
                                 if None in student_solution:
@@ -178,15 +180,13 @@ def main():
                                 if blocked:
                                     log.info('Ignoring exercise %s since %s is already blocked', exercise_idx + 1,
                                              e.student_email)
-                                    exc.email.send(e.student_email,
-                                                   *mail.Generator.exercise_blocked(exc.subject_name, exercise_idx,
-                                                                                    exc.max_tries))
+                                    exercises_blocked.append(exercise_idx)
                                     continue
                                 if passed:
-                                    passed_exercises += 1
                                     log.debug('Ignoring exercise %s since %s has already passed this exercise',
                                               exercise_idx + 1,
                                               e.student_email)
+                                    exercises_passed.append(exercise_idx)
                                     continue
 
                                 log.debug('Processing exercise %s for %s', exercise_idx + 1, e.student_email)
@@ -216,10 +216,10 @@ def main():
                                 perc = int(sum(exercise_solved['correct']) / len(exercise_solved['correct']) * 100)
                                 blocked, passed = update_stats(e.student_folder, exercise_idx, perc, exc.max_tries,
                                                                e.mat_num)
-                                exercise_solved['passed'] = passed
-                                exercise_solved['blocked'] = blocked
                                 if passed:
-                                    passed_exercises += 1
+                                    exercises_passed.append(exercise_idx)
+                                if blocked:
+                                    exercises_blocked.append(exercise_idx)
 
                                 compared_solutions.append(exercise_solved)
 
@@ -232,14 +232,19 @@ def main():
                             if len(results) > 0:
                                 exc.email.send(e.student_email, 'Ergebnisse: {}'.format(exc.subject_name), results)
 
-                            for exercise in compared_solutions:
-                                if exercise['passed']:
-                                    exc.email.send(e.student_email,
-                                                   *mail.Generator.exercise_passed(exc.subject_name,
-                                                                                   exercise['exercise']))
+                            # Send mail informing about passed exercises
+                            if len(exercises_passed):
+                                exc.email.send(e.student_email, *mail.Generator.exercise_passed(exc.subject_name,
+                                                                                                exercises_passed,
+                                                                                                e.mat_num))
+                            # Send mail informing about blocked exercises
+                            if len(exercises_blocked) > 0:
+                                exc.email.send(e.student_email, *mail.Generator.exercise_blocked(exc.subject_name,
+                                                                                                 exercises_blocked,
+                                                                                                 exc.max_tries))
 
                             # Send final congrats
-                            if passed_exercises == len(real_solutions):
+                            if len(exercises_passed) == len(real_solutions):
                                 exc.email.send(e.student_email,
                                                *mail.Generator.exercise_congrats(exc.subject_name, e.mat_num))
 

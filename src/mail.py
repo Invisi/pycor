@@ -8,7 +8,7 @@ import os
 import smtplib
 import traceback
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import utils
 
@@ -98,7 +98,7 @@ class Mail:
 
                 msg = email.message_from_bytes(data[0][1])
 
-                self.log.info('%s - Processing message %s from %s (%s)', self.username, message_id.decode('utf-8'),
+                self.log.info('%s - Downloading message %s from %s (%s)', self.username, message_id.decode('utf-8'),
                               msg['From'], msg['Subject'])
 
                 # Ignore mailer daemon or no-reply
@@ -228,20 +228,21 @@ class Generator:
             return c.subject, c.content.replace('SUBJECT', subject_name)
 
     @staticmethod
-    def exercise_passed(subject_name: str, exercise: int) -> tuple:
+    def exercise_passed(subject_name: str, exercises: List[int], mat_num: int) -> tuple:
         with Generator('Exercise_Passed') as c:
-            return c.subject, c.content.replace('SUBJECT', subject_name).replace('EXERCISE_NO', str(exercise + 1))
+            return c.subject.replace('MAT_NUM', str(mat_num)), c.content.replace('SUBJECT', subject_name).replace(
+                'EXERCISE_NO', str([x + 1 for x in exercises]))
 
     @staticmethod
-    def exercise_blocked(subject_name: str, exercise: int, max_tries: int) -> tuple:
+    def exercise_blocked(subject_name: str, exercises: List[int], max_tries: int) -> tuple:
         with Generator('Exercise_Blocked') as c:
             return c.subject, c.content.replace('SUBJECT', subject_name).replace('MAX_TRIES', str(max_tries)).replace(
-                'EXERCISE_NO', str(exercise + 1))
+                'EXERCISE_NO', str([x + 1 for x in exercises]))
 
     @staticmethod
     def exercise_congrats(subject_name: str, mat_num: int) -> tuple:
         with Generator('Exercise_Congrats') as c:
-            return c.subject, c.content.replace('SUBJECT', subject_name).replace('MAT_NUM', str(mat_num))
+            return c.subject.replace('MAT_NUM', str(mat_num)), c.content.replace('SUBJECT', subject_name)
 
     @staticmethod
     def exercise_details(solution: dict) -> str:
