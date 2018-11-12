@@ -10,7 +10,6 @@ import utils
 config = utils.import_config()
 
 
-# TODO: Refactor
 class PostProcessing:
     def __init__(self, subject_folder: Path, exercise_count: int):
         self.subject_folder = subject_folder
@@ -37,6 +36,25 @@ class PostProcessing:
         except IOError:
             return '', ''
 
+    @staticmethod
+    def load_txt(folder, ex):
+        return np.loadtxt(folder / 'data' / 'Exercise{}.txt'.format(ex + 1), delimiter=' - ', usecols=1,
+                          dtype=int, ndmin=1)
+
+    def write_csv(self, rows, name):
+        comma_file = self.post_dir / '{}_comma.csv'.format(name)
+        semicolon_file = self.post_dir / '{}_semicolon.csv'.format(name)
+        try:
+            with comma_file.open('w') as c, semicolon_file.open('w') as c2:
+                for row in rows:
+                    a = list(map(str, row))
+                    c.write(','.join(a) + '\n')
+                    c2.write(';'.join(a) + '\n')
+            self.log.info('Wrote {} files'.format(name))
+        except IOError:
+            self.log.error('Failed to save csv files')
+            self.log.error(traceback.format_exc())
+
     def generate_general(self):
         rows = [['Student', 'Matr. Num', 'No. Matr. Num. used'] + ['Exercise {}'.format(x + 1) for x in
                                                                    range(self.exercise_count)]]
@@ -52,8 +70,7 @@ class PostProcessing:
             # Percentage solved
             for ex in range(self.exercise_count):
                 try:
-                    result = np.loadtxt(folder / 'data' / 'Exercise{}.txt'.format(ex + 1), delimiter=' - ', usecols=1,
-                                        dtype=int, ndmin=1)
+                    result = self.load_txt(folder, ex)
                     perc = np.max(result)
                 except IOError:
                     perc = ''
@@ -61,20 +78,7 @@ class PostProcessing:
 
             rows.append(row)
 
-        comma_file = self.post_dir / 'GeneralInfo_coma.csv'
-        semicolon_file = self.post_dir / 'GeneralInfo_semicolon.csv'
-
-        # Write to files
-        try:
-            with comma_file.open('w') as c, semicolon_file.open('w') as c2:
-                for row in rows:
-                    a = list(map(str, row))
-                    c.write(','.join(a) + '\n')
-                    c2.write(';'.join(a) + '\n')
-            self.log.info('Wrote GeneralInfo files')
-        except IOError:
-            self.log.error('Failed to save csv files')
-            self.log.error(traceback.format_exc())
+        self.write_csv(rows, 'GeneralInfo')
 
     def generate_attempts(self):
         rows = [['Student', 'Matr. Num', 'No. Matr. Num. used'] + ['Exercise {}'.format(x + 1) for x in
@@ -91,8 +95,7 @@ class PostProcessing:
             # Amount of tries
             for ex in range(self.exercise_count):
                 try:
-                    result = np.loadtxt(folder / 'data' / 'Exercise{}.txt'.format(ex + 1), delimiter=' - ', usecols=1,
-                                        dtype=int, ndmin=1)
+                    result = self.load_txt(folder, ex)
                     amount = len(result)
                 except IOError:
                     amount = ''
@@ -100,20 +103,7 @@ class PostProcessing:
 
             rows.append(row)
 
-        comma_file = self.post_dir / 'AttemptsInfo_coma.csv'
-        semicolon_file = self.post_dir / 'AttemptsInfo_semicolon.csv'
-
-        # Write to files
-        try:
-            with comma_file.open('w') as c, semicolon_file.open('w') as c2:
-                for row in rows:
-                    a = list(map(str, row))
-                    c.write(','.join(a) + '\n')
-                    c2.write(';'.join(a) + '\n')
-            self.log.info('Wrote AttemptsInfo files')
-        except IOError:
-            self.log.error('Failed to save csv files')
-            self.log.error(traceback.format_exc())
+        self.write_csv(rows, 'AttemptsInfo')
 
     def check_mat_num(self):
         cheaters = []
@@ -136,8 +126,7 @@ class PostProcessing:
         for folder in self.filter_folders():
             for ex in range(self.exercise_count):
                 try:
-                    result = np.loadtxt(folder / 'data' / 'Exercise{}.txt'.format(ex + 1), delimiter=' - ', usecols=1,
-                                        dtype=int, ndmin=1)
+                    result = self.load_txt(folder, ex)
                     highest_score = np.max(result)
 
                     if highest_score == 100:
@@ -187,8 +176,7 @@ class PostProcessing:
                 passed[idx].append([])
 
                 try:
-                    result = np.loadtxt(folder / 'data' / 'Exercise{}.txt'.format(ex + 1), delimiter=' - ', usecols=1,
-                                        dtype=int, ndmin=1)
+                    result = self.load_txt(folder, ex)
                     highest_score = np.max(result)
                     tries = result.size
 
