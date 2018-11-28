@@ -22,3 +22,6 @@ PSW_PASSPHRASE = 'password'
 
 # Ignored folder names
 FOLDER_IGNORE = ['_postprocessing', 'PyCor_documentation']
+
+# Sentry DSN
+SENTRY_DSN = None

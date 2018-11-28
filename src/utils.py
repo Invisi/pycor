@@ -8,7 +8,10 @@ import string
 import sys
 from pathlib import Path
 
+import sentry_sdk
 import simplecrypt
+
+import config
 
 
 def setup_logger(level=logging.DEBUG):
@@ -78,6 +81,15 @@ def import_config():
     else:
         import config
     return config
+
+
+def setup_sentry(release):
+    if config.DISABLE_OUTGOING_MAIL:
+        environment = 'dev'
+    else:
+        environment = 'prod'
+    sentry_sdk.init(dsn=config.SENTRY_DSN, release=release, environment=environment,
+                    ca_certs=str(Path(__file__).parent / 'cacert.pem'))
 
 
 def random_string():

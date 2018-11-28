@@ -6,6 +6,7 @@ import traceback
 from pathlib import Path
 
 import numpy as np
+import sentry_sdk
 
 import excel
 import mail
@@ -275,8 +276,11 @@ def main():
 if __name__ == '__main__':
     # Import config
     config = utils.import_config()
-
     log = utils.setup_logger(logging.DEBUG if config.DEBUG else logging.INFO)
+
+    # Initialize Sentry
+    if hasattr(config, 'SENTRY_DSN') and config.SENTRY_DSN:
+        utils.setup_sentry(__version__)
 
     log.info("Welcome to PyCor v.%s", __version__)
     log.info('____________')
