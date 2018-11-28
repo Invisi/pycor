@@ -291,4 +291,4 @@ if __name__ == '__main__':
 
         # Wait 5 minutes between each run
         log.info('Pausing for {} minutes'.format(config.DELAY_SLEEP))
-        time.sleep(config.DELAY_SLEEP)
+        time.sleep(config.DELAY_SLEEP * 60)
