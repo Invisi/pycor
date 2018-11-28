@@ -115,6 +115,7 @@ class PostProcessing:
 
         cheater_file = self.post_dir / 'cheaters.txt'
         with cheater_file.open('w') as c:
+            c.write('List of students using several matriculation numbers:\n')
             c.writelines(cheaters)
         self.log.info('Wrote cheater file')
 
