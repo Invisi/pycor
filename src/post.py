@@ -120,7 +120,10 @@ class PostProcessing:
         self.log.info('Wrote cheater file')
 
     def generate_bars(self):
-        bar_labels = ['Ex. {}'.format(x + 1) for x in range(self.exercise_count)]
+        if self.exercise_count < 10:
+            bar_labels = ['Ex. {}'.format(x + 1) for x in range(self.exercise_count + 1)]
+        else:
+            bar_labels = [str(x + 1 for x in range(self.exercise_count + 1))]
         passed = np.zeros(self.exercise_count)
         total = np.zeros(self.exercise_count)
 
