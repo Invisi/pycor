@@ -280,6 +280,28 @@ if __name__ == '__main__':
     config = utils.import_config()
     log = utils.setup_logger(logging.DEBUG if config.DEBUG else logging.INFO)
 
+    parser = argparse.ArgumentParser(description='PyCor - Python Correction',
+                                     epilog='Runs normally when no argument is supplied')
+    parser.add_argument('-p', '--psw', action='store_true', help='Create password file')
+    parser.add_argument('-s', '--secret', action='store_true', help='Generate password passphrase/secret')
+
+    args = parser.parse_args()
+    if args.psw:  # Create password file
+        psw = Path('psw')
+        pw = getpass.getpass('Enter password (will not be echoed): ')
+        pw2 = getpass.getpass('Enter password again: ')
+
+        if pw != pw2 or not pw:
+            print('Passwords to not match or empty password supplied!')
+            exit(1)
+        else:
+            psw.write_bytes(Fernet(config.PSW_PASSPHRASE).encrypt(bytes(pw, 'utf-8')))
+            exit()
+    elif args.secret:
+        key = Fernet.generate_key()
+        print('Please set this passphrase in config.py: {}'.format(key.decode('utf-8')))
+        exit()
+
     # Initialize Sentry
     if hasattr(config, 'SENTRY_DSN') and config.SENTRY_DSN:
         utils.setup_sentry(__version__)
