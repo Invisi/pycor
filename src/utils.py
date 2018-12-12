@@ -2,14 +2,12 @@
 import datetime
 import logging
 import logging.handlers
-import os
 import random
 import string
 import sys
 from pathlib import Path
 
 import sentry_sdk
-import simplecrypt
 
 import config
 
@@ -94,24 +92,3 @@ def setup_sentry(release):
 
 def random_string():
     return ''.join(random.choices(string.digits + string.ascii_letters, k=6))
-
-
-def system_checkout():
-    # TODO: Implement
-    path = 'C:\\Windows\\dava'
-
-    if os.environ.get('ENV', '') == 'DEVELOPMENT':
-        return True
-
-    try:
-        system_file = open(path, 'r')
-        system_file_enc = system_file.read()
-        system_file.close()
-
-        system_file_dec = simplecrypt.decrypt('license', system_file_enc)
-
-        if system_file_dec == 'OK':
-            return True
-        return False
-    except (IOError, simplecrypt.DecryptionException):
-        return False

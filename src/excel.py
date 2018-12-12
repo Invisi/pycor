@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Optional
 
 import pywintypes
-import simplecrypt
 import win32com.client
+from cryptography import fernet
 
 import mail
 import utils
@@ -186,13 +186,12 @@ class ExcelCorrector(Excel):
     def find_password(self) -> Optional[str]:
         # Look for psw file
         try:
-            psw_file = open(self.subject_folder / 'psw', 'r')
-            psw_enc = psw_file.read()
-            psw_file.close()
-            return simplecrypt.decrypt(config.PSW_PASSPHRASE, psw_enc)
-        except IOError:  # psw file doesn't exist
+            psw_file = self.subject_folder / 'psw'
+            if psw_file.exists():
+                psw_enc = psw_file.read_bytes()
+                return fernet.Fernet(config.PSW_PASSPHRASE).decrypt(psw_enc).decode('utf-8')
             return ''
-        except simplecrypt.DecryptionException:  # Decryption failed, ignore corrector file
+        except fernet.InvalidToken:  # Decryption failed, ignore corrector file
             self.log.error('Failed to decrypt psw for %s', self.get_relevant_path())
             self.log.error(traceback.format_exc())
             return None

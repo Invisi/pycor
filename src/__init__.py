@@ -1,4 +1,6 @@
+import argparse
 import datetime
+import getpass
 import logging
 import os
 import time
@@ -6,7 +8,7 @@ import traceback
 from pathlib import Path
 
 import numpy as np
-import sentry_sdk
+from cryptography.fernet import Fernet
 
 import excel
 import mail

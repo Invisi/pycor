@@ -17,8 +17,8 @@ DELAY_MAILBOXES = 15
 # Delay (in m) between main loop
 DELAY_SLEEP = 2
 
-# Passphrase for corrector pws files
-PSW_PASSPHRASE = 'password'
+# Passphrase for corrector pws files (Base64)
+PSW_PASSPHRASE = 'gC9VGy09lEk7zK1257Pzj5-mDPclX_FScqLC2RLObyU='
 
 # Ignored folder names
 FOLDER_IGNORE = ['_postprocessing', 'PyCor_documentation']
