@@ -73,19 +73,22 @@ class Mail:
                 msg = email.message_from_bytes(data[0][1])
 
                 self.log.info(
-                    "%s - Downloading message %s from %s (%s)",
+                    "%s - Downloading message from %s (%s)",
                     self.username,
-                    message_id,
                     msg["From"],
                     msg["Subject"],
                 )
 
                 student_email = email.utils.parseaddr(msg["From"])[1]
 
-                if any(
-                    _ in student_email for _ in ["noreply", "no-reply", "mailer-daemon"]
+                if (
+                    any(
+                        _ in student_email
+                        for _ in ["noreply", "no-reply", "mailer-daemon"]
+                    )
+                    or student_email == self.username
                 ):
-                    # Ignore mailer-daemon or no-reply
+                    # Ignore mailer-daemon, no-reply, or own account
                     continue
                 elif student_email.endswith("fh-aachen.de"):
                     # Find files
