@@ -1,15 +1,15 @@
 import datetime
 import logging
 import os
-import traceback
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
+import openpyxl.worksheet.worksheet
 import pywintypes
 import win32com.client
 from cryptography import fernet
 
-import mail
 import utils
 
 config = utils.import_config()
@@ -19,132 +19,321 @@ class ExcelFileException(Exception):
     pass
 
 
-class Excel:
+def setup_excel():
+    excel = win32com.client.Dispatch("Excel.Application")
+    if config.SHOW_EXCEL:
+        excel.Visible = True
+
+    # "Do you want to save your work?"
+    excel.DisplayAlerts = False
+    # Links = Copied values from another sheet, we might want to detect those
+    excel.AskToUpdateLinks = False
+    # Speed up macro access
+    excel.ScreenUpdating = False
+
+    return excel
+
+
+class Commons:
     def __init__(self, excel_file: Path):
-        self.log = logging.getLogger('PyCor').getChild('Excel')
-
-        self.excel = win32com.client.Dispatch('Excel.Application')
-
-        if config.SHOW_EXCEL:
-            self.excel.Visible = True
-
-        self.excel.DisplayAlerts = False  # "Do you want to save your work?"
-        self.excel.AskToUpdateLinks = False  # Links = Copied values from another sheet, we might want to detect those
         self.excel_file = excel_file
-        self.log.info('Opening %s', self.get_relevant_path())
+        self.parent_path = excel_file.parent.resolve()
+
+        self.log = logging.getLogger("PyCor").getChild("Excel")
+        self.log.info("Opening %s", self.get_relevant_path())
 
         self.exercise_ranges = None
         self.solutions = None
 
-    def set_exercise_rows(self, ws, solutions=False):
+    def get_relevant_path(self):
+        return os.sep.join(self.excel_file.parts[-3:])
+
+    def set_exercise_rows(
+        self,
+        ws: openpyxl.worksheet.worksheet.Worksheet or win32com.client.CDispatch,
+        solutions: bool = False,
+        excel=False,
+    ):
+        """
+        Extract amount of exercises, their ranges, and (if needed) entered solutions
+
+        :param ws: :class:`openpyxl.worksheet.worksheet.Worksheet` instance to work on
+        :param solutions: Whether to grab the solutions or not
+        :param excel: Whether the given worksheet is accessed via Excel or via openpyxl
+        :return:
+        """
+
+        def get_cell(row, column):
+            if excel:  # Excel
+                return ws.Cells(row, column).Value
+            # openpyxl
+            return ws.cell(row, column).value
+
         offset = 16
         index_num = offset
         previous_exercise = 0
         exercise_row_begin = []
         exercise_row_end = []
         self.exercise_ranges = []
-
         if solutions:
             self.solutions = []
 
         while True:
-            current_exercise = ws.Cells(index_num, 1).Value  # A{index_num}
+            current_exercise = get_cell(index_num, 1)  # A{index_num}
 
-            if not isinstance(current_exercise, float):
+            # It's None once we are past all listed exercises or once we hit a hole
+            if current_exercise is None:
                 exercise_row_end.append(index_num - 1)
                 break
 
+            # Parse as int, convention
             current_exercise = int(current_exercise)
 
+            # We hit a new exercise
             if current_exercise > previous_exercise:
                 if previous_exercise > 0:
                     exercise_row_end.append(index_num - 1)
                 exercise_row_begin.append(index_num)
 
             if solutions:
+                # Collect submitted solutions
                 if len(self.solutions) <= current_exercise - 1:
                     self.solutions.append([])
-                self.solutions[current_exercise - 1].append(ws.Cells(index_num, 3).Value)  # C{index_sum}
+
+                self.solutions[current_exercise - 1].append(
+                    get_cell(index_num, 3)
+                )  # C{index_sum}
 
             previous_exercise = current_exercise
-            index_num += + 1
+            index_num += +1
 
         for i in range(len(exercise_row_begin)):
             self.exercise_ranges.append([exercise_row_begin[i], exercise_row_end[i]])
 
-    def destroy(self):
-        self.excel.Application.Quit()
-        del self.excel
 
-    def get_relevant_path(self):
-        return os.sep.join(self.excel_file.parts[-3:])
-
-
-class ExcelCorrector(Excel):
+class Student(Commons):
     def __init__(self, excel_file: Path):
         super().__init__(excel_file)
 
-        self.subject_folder = excel_file.parent
-        self.password = self.find_password()
+        self.student_email = self.parent_path.name
 
-        self.email = None
-        # type: mail.Mail
-
-        # Excel info
-        self.subject_name = None
-        self.deadline = None
-        self.max_tries = None
-
-        self.read_data()
-
-    def read_data(self):
         wb = None
         try:
-            wb = self.excel.Workbooks.Open(self.excel_file, True, False, None, self.password)
+            # Whether the file is considered valid
+            self.valid = False
+
+            # Open workbook (read-only) and grab first worksheet
+            # Ignore formulas, ignore Excel's "smart" types
+            wb = openpyxl.load_workbook(
+                self.excel_file, read_only=True, data_only=True, guess_types=True
+            )
+            ws = wb.active
+
+            self.mat_num = int(ws.cell(3, 2).value or -1)
+            self.dummies = [
+                _.value for _ in [ws.cell(6, column) for column in range(1, 101)]
+            ]
+
+            if self.mat_num < 0:
+                self.log.error(
+                    "Invalid matriculation number specified in student file."
+                )
+                raise ExcelFileException("Invalid mat_num")
+
+            self.set_exercise_rows(ws, solutions=True)
+            self.valid = True
+        except (TypeError, ValueError):
+            self.log.exception()
+            raise ExcelFileException("Failed to read information from student file.")
+        finally:
+            wb.close()
+
+    def get_stats(self, exercise: int, max_attempts: int) -> tuple:
+        """
+        Returns the student's statistics
+
+        :param exercise: Exercise number [beginning at 0]
+        :param max_attempts: Maximum amount of tries before being blocked
+        :return:
+        """
+        try:
+            exercise_file = self.parent_path / "Exercise{}_block.txt".format(exercise + 1)
+
+            if exercise_file.exists():
+                # noinspection PyTypeChecker
+                block_status = np.loadtxt(exercise_file)
+
+                # Check if user's try list doesn't match the specified max_tries
+                if len(block_status) > max_attempts:
+                    # Shorten list
+                    # TODO: Only remove zeroes?
+                    block_status = block_status[0:max_attempts]
+                    np.savetxt(exercise_file, block_status, fmt="%3.2f")
+                elif len(block_status) < max_attempts:
+                    # Extend list
+                    block_status = block_status + [0] * (max_attempts - len(block_status))
+                    np.savetxt(exercise_file, block_status, fmt="%3.2f")
+
+                if 0 < block_status[-1] < 100:
+                    # Last entry isn't passed
+                    return True, False
+                elif 100 in block_status:
+                    # Any entry is marked as passed
+                    return False, True
+                else:
+                    # Neither passed nor blocked
+                    return False, False
+            else:
+                return False, False
+        except IOError:
+            self.log.exception("Failed to get student's stats.")
+            raise
+
+    def update_stats(
+        self, exercise: int, correct_percentage: int, max_attempts: int
+    ) -> tuple:
+        """
+        Updates and saves the student's statistics
+
+        :param exercise: Exercise number [beginning at 0]
+        :param correct_percentage: Percentage of correctly answered sub tasks
+        :param max_attempts: Maximum amount of tries before being blocked
+        :return:
+        """
+        try:
+            blocked = False
+            passed = correct_percentage == 100
+
+            exercise_file = self.parent_path / "Exercise{}_block.txt".format(
+                exercise + 1
+            )
+            student_data = self.parent_path / "data"
+
+            # Does the file exist already?
+            if exercise_file.exists():
+                # noinspection PyTypeChecker
+                block_status = np.loadtxt(exercise_file)
+            else:
+                block_status = np.zeros(max_attempts)
+
+            # Check if user still has tries
+            try_row = [r[0] for r in enumerate(block_status) if r[1] == 0]
+
+            # There's at least one attempt left, let's log the results!
+            if len(try_row) > 0:
+                block_status[try_row[0]] = correct_percentage
+                np.savetxt(exercise_file, block_status, fmt="%3.2f")
+            else:
+                blocked = True
+
+            # Check if student failed his last try
+            if 0 < block_status[-1] < 100:
+                blocked = True
+                self.log.info("Blocked %s for exercise %s", self.student_email, exercise + 1)
+
+            # Create user-specific data folder
+            if not student_data.exists():
+                student_data.mkdir(exist_ok=True)
+
+            current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # Save percentage and date/time to file
+            exercise_all = student_data / "Exercise{}.txt".format(exercise + 1)
+            with exercise_all.open("a") as ea:
+                ea.write("{} - {}\n".format(current_datetime, correct_percentage))
+
+            # Save used mat_num to file
+            mat_num_file = student_data / "mat_num.txt"
+            with mat_num_file.open("a") as mnf:
+                mnf.write("{} - {}\n".format(current_datetime, self.mat_num))
+
+            return blocked, passed
+        except IOError:
+            self.log.exception("Failed to save student's stats.")
+            raise
+
+
+class Corrector(Commons):
+    def __init__(self, excel_file: Path):
+        super().__init__(excel_file)
+        self.password = self.find_password()
+
+        # Password could not be decrypted
+        if self.password is None:
+            self.valid = False
+            return
+
+        wb = None
+        excel = None
+        try:
+            # Whether the file is considered valid
+            self.valid = False
+
+            """
+            Open workbook in Excel. It has to be Excel because workbook-wide encryption creates a weird FAT-like 
+            compound archive that can't be read with any (currently) existing library.
+            """
+            excel = setup_excel()
+            wb = excel.Workbooks.Open(self.excel_file, 0, False, None, self.password)
+
+            # Grab first worksheet
             ws = wb.Worksheets(1)
-            # Check for valid subject name
-            self.subject_name = ws.Range('B1').Value
+
+            # Extract subject
+            self.subject_name = ws.Range("B1").Value
             if not self.subject_name:
-                self.log.error('Empty subject field in %s. Please specify a valid name.', self.get_relevant_path())
-                raise ExcelFileException('Invalid subject field')
+                raise ExcelFileException(
+                    "Empty subject field. Please specify a valid name."
+                )
+
+            # Name that should be matched against submitted files
+            self.codename = ws.Range("B2").Value
+            if not self.codename:
+                raise ExcelFileException(
+                    "Empty file name field. Please specify a valid name."
+                )
+            elif ".xlsx" in self.codename:
+                # Remove file ending, might get added accidentally
+                # TODO: Yell at user?
+                self.codename = self.codename.replace(".xlsx", "")
 
             # Check deadline, allow for same-day submissions
-            deadline = [int(x or -1) for x in ws.Range('B9:D9').Value[0]]
+            deadline = [int(x or -1) for x in ws.Range("B9:D9").Value[0]]
             if -1 in deadline:
-                self.log.error('Invalid date in deadline')
-                raise ExcelFileException('Invalid deadline')
+                raise ExcelFileException("Invalid deadline.")
+
             self.deadline = datetime.date(deadline[2], deadline[1], deadline[0])
             if (self.deadline - datetime.date.today()).days < 0:
-                self.log.info('Ignoring %s due to deadline (%s)', self.get_relevant_path(), self.deadline)
-                raise ExcelFileException('Over deadline')
+                self.log.info(
+                    "Ignoring %s due to deadline (%s)",
+                    self.get_relevant_path(),
+                    self.deadline,
+                )
 
-            self.max_tries = int(ws.Range('E12').Value or 0)
-            if self.max_tries < 1:
-                self.log.error('Invalid number of max tries')
-                raise ExcelFileException('Invalid number of max tries')
+            # Get max amount of attempts
+            self.max_attempts = int(ws.Range("E12").Value or 0)
+            if self.max_attempts < 1:
+                raise ExcelFileException("Invalid number of max attempts.")
 
-            # Get amount of exercises
-            self.set_exercise_rows(ws)
+            # Grab exercise info
+            self.set_exercise_rows(ws, excel=True)
 
-            email = ws.Range('B11:C11').Value[0]
-            if None in email:
-                self.log.error('Invalid email data')
-                raise ExcelFileException('Invalid email login')
-            email = ''.join(email).replace(' ', '')
-            email_password = ws.Range('B12').Value
-            # Login to mail account
-            try:
-                self.email = mail.Mail(email, email_password, self.subject_folder, self.subject_name)
-            except mail.LoginException:
-                self.log.error('Invalid login data for %s', self.get_relevant_path())
-                self.log.error(traceback.format_exc())
-                raise ExcelFileException('Invalid email login')
+            self.valid = True
         except (pywintypes.com_error, TypeError, ValueError):
-            self.log.error(traceback.format_exc())
-            raise ExcelFileException('Failed to read relevant info from corrector')
+            self.log.exception("Failed to read information from corrector.")
+            utils.write_error(
+                self.parent_path, f"Fehler beim Einlesen der corrector-Datei."
+            )
+        except AttributeError:
+            self.log.exception("Looks like excel crashed. Quitting.")
+            raise
         finally:
+            # Close WorkBook and Excel
             if wb:
                 wb.Close(SaveChanges=False)
+            if excel:
+                excel.Application.Quit()
+                del excel
 
     def generate_solutions(self, mat_num: int, dummies: []) -> Optional[list]:
         """
@@ -157,91 +346,87 @@ class ExcelCorrector(Excel):
         :return:
         """
         wb = None
+        excel = None
+
         try:
-            wb = self.excel.Workbooks.Open(self.excel_file, True, False, None, self.password)
+            excel = setup_excel()
+
+            # Open workbook
+            wb = excel.Workbooks.Open(self.excel_file, 0, False, None, self.password)
             ws = wb.Worksheets(1)
 
-            ws.Range('B3').Value = mat_num
-            ws.Range('A6:CV6').Value = dummies
+            # Copy values
+            ws.Range("B3").Value = mat_num
+            ws.Range("A6:CV6").Value = dummies
 
+            # Collect solutions
             solutions = []
-
             for idx, exercise in enumerate(self.exercise_ranges):
                 if len(solutions) <= idx:
                     solutions.append([])
+
                 for cell_number in range(exercise[0], exercise[1] + 1):
-                    solutions[idx].append({
-                        'name': ws.Cells(cell_number, 2).Value,  # B{index}
-                        'value': ws.Cells(cell_number, 3).Value,  # C{index}
-                        'tolerance': ws.Cells(cell_number, 4).Value  # D{index}
-                    })
+                    solutions[idx].append(
+                        {
+                            "name": ws.Cells(cell_number, 2).Value,  # B{index}
+                            "value": ws.Cells(cell_number, 3).Value,  # C{index}
+                            "tolerance": ws.Cells(cell_number, 4).Value,  # D{index}
+                        }
+                    )
+
             return solutions
         except (pywintypes.com_error, TypeError, ValueError):
-            self.log.error(traceback.format_exc())
-            raise ExcelFileException('Failed to generate solutions in corrector')
+            self.log.exception("Failed to generate solutions in corrector.")
+            raise ExcelFileException("Failed to generate solutions.")
+        except AttributeError:
+            self.log.exception("Looks like excel crashed. Quitting.")
+            raise
         finally:
+            # Close WorkBook and Excel
             if wb:
                 wb.Close(SaveChanges=False)
+            if excel:
+                excel.Application.Quit()
+                del excel
+
+    @staticmethod
+    def from_path(subject_folder: Path):
+        """
+        Searches for `corrector.xls[mx]?` in given path and returns :class:`Corrector` if found
+
+        :param subject_folder: Path in which should be searched
+        """
+        extensions = [".xlsx", ".xlsm", ".xls"]
+
+        # Ignore folders containing the ignore file
+        ignore_file = subject_folder / "PYCOR_IGNORE.txt"
+        if ignore_file.exists():
+            return
+        for item in subject_folder.iterdir():
+            if (
+                item.is_file()
+                and item.suffix in extensions
+                and item.stem == "corrector"
+            ):
+                return Corrector(item)
 
     def find_password(self) -> Optional[str]:
         # Look for psw file
         try:
-            psw_file = self.subject_folder / 'psw'
+            psw_file = self.parent_path / "psw"
             if psw_file.exists():
-                psw_enc = psw_file.read_bytes()
-                return fernet.Fernet(config.PSW_PASSPHRASE).decrypt(psw_enc).decode('utf-8')
-            return ''
-        except fernet.InvalidToken:  # Decryption failed, ignore corrector file
-            self.log.error('Failed to decrypt psw for %s', self.get_relevant_path())
-            self.log.error(traceback.format_exc())
+                return (
+                    fernet.Fernet(config.PSW_PASSPHRASE)
+                    .decrypt(psw_file.read_bytes())
+                    .decode("utf-8")
+                )
+            return ""
+        except (
+            fernet.InvalidToken,
+            IOError,
+        ):  # Decryption failed, ignore corrector file
+            self.log.exception("Failed to decrypt psw for %s", self.get_relevant_path())
+            utils.write_error(
+                self.parent_path, "Fehler beim Entschlüsseln der Passwortdatei."
+            )
             return None
-
-    @staticmethod
-    def from_subject_folder(subject_folder: Path) -> Optional['ExcelCorrector']:
-        extensions = ['.xlsx', '.xlsm', '.xls']
-
-        # Ignore folders containing the ignore file
-        ignore_file = subject_folder / 'PYCOR_IGNORE.txt'
-        if ignore_file.exists():
-            return
-
-        for item in subject_folder.iterdir():
-            if item.is_file() and item.suffix in extensions:
-                return ExcelCorrector(item)
-        return
-
-
-class ExcelStudent(Excel):
-    def __init__(self, excel_file: Path):
-        super().__init__(excel_file)
-        self.mat_num = None
-        self.dummies = None
-
-        self.student_folder = excel_file.parent
-        self.student_email = self.student_folder.name
-
-        self.read_data()
-
-    def read_data(self):
-        wb = None
-        try:
-            wb = self.excel.Workbooks.Open(self.excel_file)
-            ws = wb.Worksheets(1)
-            self.mat_num = int(ws.Range('B3').Value or -1)
-            self.dummies = ws.Range('A6:CV6').Value[0]  # Get a1-a100 values
-
-            if self.mat_num < 0:
-                self.log.error('Invalid matriculation number specified')
-                raise ExcelFileException('Invalid mat_num')
-
-            self.set_exercise_rows(ws, solutions=True)
-        except (pywintypes.com_error, TypeError, ValueError):
-            self.log.error(traceback.format_exc())
-            raise ExcelFileException('Failed to read relevant info')
-        except AttributeError:
-            self.log.error(traceback.format_exc())
-            self.log.error('Looks like excel crashed. Let\'s quit.')
-            raise
-        finally:
-            if wb:
-                wb.Close(SaveChanges=False)

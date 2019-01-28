@@ -1,13 +1,10 @@
 import argparse
-import datetime
 import getpass
 import logging
 import os
 import time
-import traceback
 from pathlib import Path
 
-import numpy as np
 from cryptography.fernet import Fernet
 
 import excel
@@ -15,14 +12,14 @@ import mail
 import post
 import utils
 
-__version__ = '1.5.0'
+__version__ = "2019-04-01_alpha"
 
 
 def compare(attempt: float or str, solution: float or str, tolerance: int or float):
     try:
         # In case the student made a space after the comma...
         if isinstance(attempt, str) and isinstance(solution, float):
-            attempt = float(attempt.replace(',', '.').replace(' ', ''))
+            attempt = float(attempt.replace(",", ".").replace(" ", ""))
 
         # Make sure to convert ints to floats
         if isinstance(solution, int):
@@ -38,281 +35,266 @@ def compare(attempt: float or str, solution: float or str, tolerance: int or flo
 
         # Compare numerical values
         if isinstance(solution, float):
-            return (1 - tolerance / 100) * solution <= attempt <= (1 + tolerance / 100) * solution
-    except (TypeError, ValueError):
-        log.error(traceback.format_exc())
-
-    # Unexpected values
-    log.error('Unexpected values in comparison: Student: %s (%s), Corrector: %s (%s), Tolerance: %s (%s)', attempt,
-              type(attempt), solution, type(solution), tolerance, type(tolerance))
+            return (
+                (1 - tolerance / 100) * solution
+                <= attempt
+                <= (1 + tolerance / 100) * solution
+            )
+    except (TypeError, ValueError):  # Unexpected values or failed cast
+        log.exception(
+            "Unexpected values in comparison: Student: %s (%s), Corrector: %s (%s), Tolerance: %s (%s)",
+            attempt,
+            type(attempt),
+            solution,
+            type(solution),
+            tolerance,
+            type(tolerance),
+        )
     return False
 
 
-def get_stats(student_folder: Path, exercise: int, max_tries: int) -> tuple:
-    try:
-        exercise_file = student_folder / 'Exercise{}_block.txt'.format(exercise + 1)
-
-        if os.path.exists(exercise_file):
-            # noinspection PyTypeChecker
-            block_status = np.loadtxt(exercise_file)
-
-            # Check if user's try list doesn't match the specified max_tries
-            if len(block_status) > max_tries:
-                # Shorten list
-                block_status = block_status[0:max_tries]
-                np.savetxt(exercise_file, block_status, fmt='%3.2f')
-            elif len(block_status) < max_tries:
-                # Extend list
-                block_status = block_status + [0] * (max_tries - len(block_status))
-                np.savetxt(exercise_file, block_status, fmt='%3.2f')
-
-            if 0 < block_status[-1] < 100:
-                return True, False
-            elif block_status[-1] == 0:
-                return False, False
-            else:
-                return False, True
-        else:
-            return False, False
-    except IOError:
-        log.error(traceback.format_exc())
-        raise
-
-
-def update_stats(student_folder: Path, exercise: int, correct_perc: int, max_tries: int, mat_num: int) -> tuple:
-    """
-    Updates and saves the student's statistics
-
-    :param student_folder: Full path to student's folder
-    :param exercise: Exercise number [beginning at 0]
-    :param correct_perc: Percentage of correctly answered sub tasks
-    :param max_tries: Maximum amount of tries before being blocked
-    :param mat_num: Student's matriculation number
-    :return:
-    """
-    try:
-        blocked = False
-        passed = correct_perc == 100
-
-        student_email = student_folder.name
-        exercise_file = student_folder / 'Exercise{}_block.txt'.format(exercise + 1)
-        student_data = student_folder / 'data'
-
-        # Does the file exist already?
-        if exercise_file.exists():
-            # noinspection PyTypeChecker
-            block_status = np.loadtxt(exercise_file)
-        else:
-            block_status = np.zeros(max_tries)
-
-        # Check if user still has tries
-        try_row = [r[0] for r in enumerate(block_status) if r[1] == 0]
-
-        # There's at least one attempt left, let's log the results!
-        if len(try_row) > 0:
-            block_status[try_row[0]] = correct_perc
-            np.savetxt(exercise_file, block_status, fmt='%3.2f')
-        else:
-            blocked = True
-
-        # Check if student failed his last try
-        if 0 < block_status[-1] < 100:
-            blocked = True
-            log.info('Blocked %s for exercise %s', student_email, exercise + 1)
-
-        # Create user-specific data folder
-        if not student_data.exists():
-            student_data.mkdir(exist_ok=True)
-
-        current_datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        # Save percentage and date/time to file
-        exercise_all = student_data / 'Exercise{}.txt'.format(exercise + 1)
-        with exercise_all.open('a') as ea:
-            ea.write('{} - {}\n'.format(current_datetime, correct_perc))
-
-        # Save used mat_num to file
-        mat_num_file = student_data / 'mat_num.txt'
-        with mat_num_file.open('a') as mnf:
-            mnf.write('{} - {}\n'.format(current_datetime, mat_num))
-
-        return blocked, passed
-    except IOError:
-        log.error(traceback.format_exc())
-        raise
-
-
 def main():
-    # Iterate over configured folders
-    for prof_folder in config.FOLDERS:
-        prof_folder = Path(prof_folder).resolve()
-        log.debug("Accessing folder: %s", prof_folder)
+    # Dict containing file name as key and Corrector as value
+    valid_filenames = {}
 
-        # Iterate over the subjects folders.
-        for subject_folder in prof_folder.iterdir():
-            if not subject_folder.is_dir() or subject_folder.name in config.FOLDER_IGNORE:
-                log.debug('Skipping %s', subject_folder)
-                continue
-            log.debug("Accessing subfolder: %s", subject_folder)
+    # Idling mail instance
+    mail_instance = mail.Mail()
 
-            # Try to find and open corrector
-            try:
-                exc = excel.ExcelCorrector.from_subject_folder(subject_folder)
-                if exc:
-                    student_files = exc.email.check_inbox()
-                    for s_file in student_files:
-                        student_email = s_file.parent.name
-                        try:
-                            e = excel.ExcelStudent(s_file)
+    def find_email_subjects():
+        nonlocal valid_filenames
 
-                            real_solutions = exc.generate_solutions(e.mat_num, e.dummies)
-                            e.destroy()
+        # Reset dict
+        valid_filenames = {}
 
-                            compared_solutions = []
+        # Find configured groups
+        for group in config.FOLDERS:
+            group = Path(group).resolve()
 
-                            # List of passed/blocked exercises
-                            exercises_blocked = []
-                            exercises_passed = []
-                            for exercise_idx, student_solution in enumerate(e.solutions):
-                                # Ignore exercise if one of the fields is empty
-                                if None in student_solution:
-                                    continue
+            # Iterate over subjects
+            for subject in group.iterdir():
+                # Ignore files and blacklisted folders
+                if not subject.is_dir() or subject.name in config.FOLDER_IGNORE:
+                    continue
 
-                                # Check if user is blocked or passed the exercise previously
-                                blocked, passed = get_stats(e.student_folder, exercise_idx, exc.max_tries)
-                                if blocked:
-                                    log.info('Ignoring exercise %s since %s is already blocked', exercise_idx + 1,
-                                             e.student_email)
-                                    exercises_blocked.append(exercise_idx)
-                                    continue
-                                if passed:
-                                    log.debug('Ignoring exercise %s since %s has already passed this exercise',
-                                              exercise_idx + 1,
-                                              e.student_email)
-                                    exercises_passed.append(exercise_idx)
-                                    continue
+                # Try to find corrector.xlsx
+                exc = excel.Corrector.from_path(subject)
+                if exc and exc.valid:
+                    if exc.codename.lower() in valid_filenames:
+                        log.error("Duplicate codenames: %s", exc.codename)
+                        utils.write_error(
+                            exc.parent_path,
+                            (
+                                f"Der Dateiname {exc.codename} ist bereits registriert "
+                                f'für das Modul "{valid_filenames[exc.codename.lower()].subject_name}!"'
+                            ),
+                        )
+                        continue
 
-                                log.debug('Processing exercise %s for %s', exercise_idx + 1, e.student_email)
+                    # Append subject and Corrector
+                    log.info(
+                        'Registered {} with file name "{}"'.format(
+                            exc.subject_name, exc.codename
+                        )
+                    )
+                    valid_filenames[exc.codename.lower()] = exc
 
-                                corrector_solution = real_solutions[exercise_idx]
-                                # type: dict
-                                # Make sure the student didn't somehow delete any exercise part
-                                if len(student_solution) != len(corrector_solution):
-                                    log.warning(
-                                        '%s may have tampered with the excel file, got different amount of sub '
-                                        'exercises for exercise %s', e.student_email, exercise_idx + 1)
-                                    continue
+    # Refresh list of known subjects
+    find_email_subjects()
 
-                                # Vector for single exercise
-                                exercise_solved = {'exercise': exercise_idx,
-                                                   'correct': [False] * len(student_solution),
-                                                   'var_names': []}
-                                for partial_idx, partial in enumerate(student_solution):
-                                    exercise_solved['correct'][partial_idx] = compare(partial,
-                                                                                      corrector_solution[
-                                                                                          partial_idx]['value'],
-                                                                                      corrector_solution[
-                                                                                          partial_idx]['tolerance'])
-                                    exercise_solved['var_names'].append(corrector_solution[partial_idx]['name'])
+    # Check inbox for new mails/submitted files
+    student_files = mail_instance.check_inbox(valid_filenames)
 
-                                # Update student block/pass stats
-                                perc = int(sum(exercise_solved['correct']) / len(exercise_solved['correct']) * 100)
-                                blocked, passed = update_stats(e.student_folder, exercise_idx, perc, exc.max_tries,
-                                                               e.mat_num)
-                                if passed:
-                                    exercises_passed.append(exercise_idx)
-                                if blocked:
-                                    exercises_blocked.append(exercise_idx)
+    # Sort by codename/module number
+    student_files.sort(key=lambda x: x["corrector"].codename)
 
-                                compared_solutions.append(exercise_solved)
+    # Correct each file
+    for sf in student_files:
+        try:
+            e = excel.Student(sf["student"])
 
-                            # Send results
-                            results = ''
-                            for solution in compared_solutions:
-                                results += mail.Generator.exercise_details(solution)
+            real_solutions = sf["corrector"].generate_solutions(e.mat_num, e.dummies)
 
-                            # May be empty if nothing was submitted
-                            if len(results) > 0:
-                                exc.email.send(e.student_email, 'Ergebnisse: {}'.format(exc.subject_name), results)
+            compared_solutions = []
 
-                            # Send mail informing about passed exercises
-                            if len(exercises_passed):
-                                exc.email.send(e.student_email, *mail.Generator.exercise_passed(exc.subject_name,
-                                                                                                exercises_passed,
-                                                                                                e.mat_num))
-                            # Send mail informing about blocked exercises
-                            if len(exercises_blocked) > 0:
-                                exc.email.send(e.student_email, *mail.Generator.exercise_blocked(exc.subject_name,
-                                                                                                 exercises_blocked,
-                                                                                                 exc.max_tries))
+            # List of passed/blocked exercises
+            exercises_blocked = []
+            exercises_passed = []
+            for idx, student_solution in enumerate(e.solutions):
+                # Ignore exercise if one of the fields is empty
+                if None in student_solution:
+                    continue
 
-                            # Send final congrats
-                            if len(exercises_passed) == len(real_solutions):
-                                exc.email.send(e.student_email,
-                                               *mail.Generator.exercise_congrats(exc.subject_name, e.mat_num))
+                # Check if user is blocked or passed the exercise previously
+                blocked, passed = e.get_stats(idx, sf["corrector"].max_attempts)
+                if blocked:
+                    log.info(
+                        "Ignoring exercise %s since %s is already blocked",
+                        idx + 1,
+                        e.student_email,
+                    )
+                    exercises_blocked.append(idx)
+                    continue
+                elif passed:
+                    log.debug(
+                        "Ignoring exercise %s since %s has already passed this exercise",
+                        idx + 1,
+                        e.student_email,
+                    )
+                    exercises_passed.append(idx)
+                    continue
 
-                        except excel.ExcelFileException:
-                            log.warning(traceback.format_exc())
-                            log.error('Error during processing of %s', s_file.parts[-3:])
-                            exc.email.send(student_email, *mail.Generator.error_processing(exc.subject_name))
-                        except IOError:
-                            log.error(traceback.format_exc())
-                            log.error('Error during processing of %s', s_file.parts[-3:])
-                            exc.email.send(student_email, *mail.Generator.error_processing(exc.subject_name))
-                            raise  # Fail securely
+                log.debug("Processing exercise %s for %s", idx + 1, e.student_email)
 
-                    exc.destroy()
+                corrector_solution = real_solutions[idx]
+                # Make sure the student didn't somehow delete any exercise part
+                if len(student_solution) != len(corrector_solution):
+                    log.warning(
+                        "%s may have tampered with the excel file, got different amount of sub "
+                        "exercises for exercise %s",
+                        e.student_email,
+                        idx + 1,
+                    )
+                    continue
 
-                    # Run post processing if we got new submissions
-                    if len(student_files) > 0:
-                        post.PostProcessing(subject_folder, len(exc.exercise_ranges)).run()
-                else:
-                    log.debug('Ignoring folder %s due to missing corrector file', subject_folder)
-            except excel.ExcelFileException:
-                log.debug(traceback.format_exc())
+                # Vector for single exercise
+                exercise_solved = {
+                    "exercise": idx,
+                    "correct": [False] * len(student_solution),
+                    "var_names": [],
+                }
+                for partial_idx, partial in enumerate(student_solution):
+                    exercise_solved["correct"][partial_idx] = compare(
+                        partial,
+                        corrector_solution[partial_idx]["value"],
+                        corrector_solution[partial_idx]["tolerance"],
+                    )
+                    exercise_solved["var_names"].append(
+                        corrector_solution[partial_idx]["name"]
+                    )
 
-            log.info("____________")
-            time.sleep(config.DELAY_MAILBOXES)
+                # Update student block/pass stats
+                perc = int(
+                    sum(exercise_solved["correct"])
+                    / len(exercise_solved["correct"])
+                    * 100
+                )
+                blocked, passed = e.update_stats(
+                    idx, perc, sf["corrector"].max_attempts
+                )
+                if passed:
+                    exercises_passed.append(idx)
+                if blocked:
+                    exercises_blocked.append(idx)
+
+                compared_solutions.append(exercise_solved)
+
+            # Send results
+            results = ""
+            for solution in compared_solutions:
+                results += mail.Generator.exercise_details(solution)
+
+            # May be empty if nothing was submitted
+            if len(results) > 0:
+                mail_instance.send(
+                    e.student_email,
+                    f"Ergebnisse: {sf['corrector'].subject_name}",
+                    results,
+                )
+                log.debug("Sending results")
+
+            # Send mail informing about passed exercises
+            if len(exercises_passed):
+                mail_instance.send(
+                    e.student_email,
+                    *mail.Generator.exercise_passed(
+                        sf["corrector"].subject_name, exercises_passed, e.mat_num
+                    ),
+                )
+                log.debug("Sending passed")
+
+            # Send mail informing about blocked exercises
+            if len(exercises_blocked) > 0:
+                mail_instance.send(
+                    e.student_email,
+                    *mail.Generator.exercise_blocked(
+                        sf["corrector"], exercises_blocked, sf["corrector"].max_attempts
+                    ),
+                )
+                log.debug("Sending blocked")
+
+            # Send final congrats
+            if len(exercises_passed) == len(real_solutions):
+                mail_instance.send(
+                    e.student_email,
+                    *mail.Generator.exercise_congrats(
+                        sf["correctpr"].subject_name, e.mat_num
+                    ),
+                )
+                log.debug("Sending final congratz")
+        except excel.ExcelFileException:
+            log.exception("Error during processing of student file.")
+        except IOError:
+            log.exception("Critical error during processing. Quitting.")
+            raise
+
+    if len(student_files) > 0:
+        # Run post processing on all matched correctors
+        for corrector in set(_["corrector"] for _ in student_files):
+            post.PostProcessing(
+                corrector.parent_path, len(corrector.exercise_ranges)
+            ).run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Import config
     config = utils.import_config()
     log = utils.setup_logger(logging.DEBUG if config.DEBUG else logging.INFO)
 
-    parser = argparse.ArgumentParser(description='PyCor - Python Correction',
-                                     epilog='Runs normally when no argument is supplied')
-    parser.add_argument('-p', '--psw', action='store_true', help='Create password file')
-    parser.add_argument('-s', '--secret', action='store_true', help='Generate password passphrase/secret')
+    # Ignore warnings if not in debug mode
+    if not config.DEBUG:
+        os.environ["PYTHONWARNINGS"] = "ignore"
+
+    parser = argparse.ArgumentParser(
+        description="PyCor - Python Correction",
+        epilog="Runs normally when no argument is supplied",
+    )
+    parser.add_argument("-p", "--psw", action="store_true", help="Create password file")
+    parser.add_argument(
+        "-s",
+        "--secret",
+        action="store_true",
+        help="Generate password passphrase/secret",
+    )
 
     args = parser.parse_args()
     if args.psw:  # Create password file
-        psw = Path('psw')
-        pw = getpass.getpass('Enter password (will not be echoed): ')
-        pw2 = getpass.getpass('Enter password again: ')
+        psw = Path("psw")
+        pw = getpass.getpass("Enter password (will not be echoed): ")
+        pw2 = getpass.getpass("Enter password again: ")
 
         if pw != pw2 or not pw:
-            print('Passwords to not match or empty password supplied!')
+            print("Passwords to not match or empty password supplied!")
             exit(1)
         else:
-            psw.write_bytes(Fernet(config.PSW_PASSPHRASE).encrypt(bytes(pw, 'utf-8')))
+            psw.write_bytes(Fernet(config.PSW_PASSPHRASE).encrypt(bytes(pw, "utf-8")))
             exit()
     elif args.secret:
         key = Fernet.generate_key()
-        print('Please set this passphrase in config.py: {}'.format(key.decode('utf-8')))
+        print("Please set this passphrase in config.py: {}".format(key.decode("utf-8")))
         exit()
 
     # Initialize Sentry
-    if hasattr(config, 'SENTRY_DSN') and config.SENTRY_DSN:
+    if hasattr(config, "SENTRY_DSN") and config.SENTRY_DSN:
         utils.setup_sentry(__version__)
 
     log.info("Welcome to PyCor v.%s", __version__)
-    log.info('____________')
     log.info("PyCor is now running!")
 
     while True:
         main()
 
-        # Wait 5 minutes between each run
-        log.info('Pausing for {} minutes'.format(config.DELAY_SLEEP))
+        # Wait x minutes between each run
+        log.info("Pausing for {} minutes".format(config.DELAY_SLEEP))
         time.sleep(config.DELAY_SLEEP * 60)
+
+    # TODO: In DB, Übergangsdatum: April 2019
