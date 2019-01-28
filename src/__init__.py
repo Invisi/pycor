@@ -53,53 +53,56 @@ def compare(attempt: float or str, solution: float or str, tolerance: int or flo
     return False
 
 
+def find_valid_filenames():
+    """
+    Searches for corrector files in configured folders. Returns dictionary containing codename as key
+    and :class:`excel.Corrector` as value.
+
+    :return: Dict[str, excel.Corrector]
+    """
+    # Reset dict
+    valid_filenames = {}
+
+    # Find configured groups
+    for group in config.FOLDERS:
+        group = Path(group).resolve()
+
+        # Iterate over subjects
+        for subject in group.iterdir():
+            # Ignore files and blacklisted folders
+            if not subject.is_dir() or subject.name in config.FOLDER_IGNORE:
+                continue
+
+            # Try to find corrector.xlsx
+            exc = excel.Corrector.from_path(subject)
+            if exc and exc.valid:
+                if exc.codename.lower() in valid_filenames:
+                    log.error("Duplicate codenames: %s", exc.codename)
+                    utils.write_error(
+                        exc.parent_path,
+                        (
+                            f"Der Dateiname {exc.codename} ist bereits registriert "
+                            f'für das Modul "{valid_filenames[exc.codename.lower()].subject_name}!"'
+                        ),
+                    )
+                    continue
+
+                # Append subject and Corrector
+                log.info(
+                    'Registered {} with file name "{}"'.format(
+                        exc.subject_name, exc.codename
+                    )
+                )
+                valid_filenames[exc.codename.lower()] = exc
+    return valid_filenames
+
+
 def main():
     # Dict containing file name as key and Corrector as value
-    valid_filenames = {}
+    valid_filenames = find_valid_filenames()
 
     # Idling mail instance
     mail_instance = mail.Mail()
-
-    def find_email_subjects():
-        nonlocal valid_filenames
-
-        # Reset dict
-        valid_filenames = {}
-
-        # Find configured groups
-        for group in config.FOLDERS:
-            group = Path(group).resolve()
-
-            # Iterate over subjects
-            for subject in group.iterdir():
-                # Ignore files and blacklisted folders
-                if not subject.is_dir() or subject.name in config.FOLDER_IGNORE:
-                    continue
-
-                # Try to find corrector.xlsx
-                exc = excel.Corrector.from_path(subject)
-                if exc and exc.valid:
-                    if exc.codename.lower() in valid_filenames:
-                        log.error("Duplicate codenames: %s", exc.codename)
-                        utils.write_error(
-                            exc.parent_path,
-                            (
-                                f"Der Dateiname {exc.codename} ist bereits registriert "
-                                f'für das Modul "{valid_filenames[exc.codename.lower()].subject_name}!"'
-                            ),
-                        )
-                        continue
-
-                    # Append subject and Corrector
-                    log.info(
-                        'Registered {} with file name "{}"'.format(
-                            exc.subject_name, exc.codename
-                        )
-                    )
-                    valid_filenames[exc.codename.lower()] = exc
-
-    # Refresh list of known subjects
-    find_email_subjects()
 
     # Check inbox for new mails/submitted files
     student_files = mail_instance.check_inbox(valid_filenames)
@@ -124,6 +127,7 @@ def main():
                 if None in student_solution:
                     continue
 
+                # region First block/pass check for exercise
                 # Check if user is blocked or passed the exercise previously
                 blocked, passed = e.get_stats(idx, sf["corrector"].max_attempts)
                 if blocked:
@@ -145,6 +149,9 @@ def main():
 
                 log.debug("Processing exercise %s for %s", idx + 1, e.student_email)
 
+                # endregion
+
+                # region Comparison of submitted solutions with corrector
                 corrector_solution = real_solutions[idx]
                 # Make sure the student didn't somehow delete any exercise part
                 if len(student_solution) != len(corrector_solution):
@@ -187,7 +194,9 @@ def main():
                     exercises_blocked.append(idx)
 
                 compared_solutions.append(exercise_solved)
+            # endregion
 
+            # region Sending passed/blocked/congrats mails
             # Send results
             results = ""
             for solution in compared_solutions:
@@ -231,6 +240,7 @@ def main():
                     ),
                 )
                 log.debug("Sending final congratz")
+            # endregion
         except excel.ExcelFileException:
             log.exception("Error during processing of student file.")
         except IOError:
