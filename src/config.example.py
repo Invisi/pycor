@@ -4,10 +4,15 @@ FOLDERS = [
     'test\\folder 2'
 ]
 
-# Sets console output level, default is INFO. Disables flagging mails as read
+# Sets console output level, default is INFO.
 DEBUG = False
+
 # Disable mail sending
 DISABLE_OUTGOING_MAIL = True
+
+# Whether to flag mails as read
+MARK_MAILS_AS_READ = False
+
 # Make excel visible during processing
 SHOW_EXCEL = False
 

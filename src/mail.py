@@ -65,7 +65,9 @@ class Mail:
                 _, data = self.imap.fetch(message_id, "(RFC822)")
 
                 # Keep mail as unread if in debug mode
-                if config.DEBUG:
+                if not (
+                    hasattr(config, "MARK_MAILS_AS_READ") and config.MARK_MAILS_AS_READ
+                ):
                     self.imap.store(message_id, "-FLAGS", "\\Seen")
 
                 msg = email.message_from_bytes(data[0][1])
@@ -174,7 +176,7 @@ class Mail:
         msg["Subject"] = subject
 
         # Don't send emails if in debug mode
-        if config.DISABLE_OUTGOING_MAIL:
+        if hasattr(config, "DISABLE_OUTGOING_MAIL") and config.DISABLE_OUTGOING_MAIL:
             self.log.debug("Sending mail: %s", content)
             return
         try:
