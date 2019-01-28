@@ -15,10 +15,8 @@ a = Analysis(['src\\__init__.py'],
              cipher=block_cipher,
              noarchive=False)
 
-a.datas += Tree('src/_AutoReply', prefix='_AutoReply')
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
           a.binaries,

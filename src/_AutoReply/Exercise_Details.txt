@@ -1,9 +1,0 @@
-<table>
-  <tr>
-    <th>Variable</th>
-    <th>Korrektur</th>
-  </tr>
-PrintResults
-  </tr>
-</table>
-<hr/>
