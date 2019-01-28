@@ -1,5 +1,5 @@
+import csv
 import logging
-import traceback
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -13,9 +13,9 @@ config = utils.import_config()
 class PostProcessing:
     def __init__(self, subject_folder: Path, exercise_count: int):
         self.subject_folder = subject_folder
-        self.log = logging.getLogger('PyCor').getChild('PostProcessing')
+        self.log = logging.getLogger("PyCor").getChild("PostProcessing")
         self.exercise_count = exercise_count
-        self.post_dir = subject_folder / '_postprocessing'
+        self.post_dir = subject_folder / "_postprocessing"
 
         # Create postprocessing folder
         if not self.post_dir.exists():
@@ -24,40 +24,56 @@ class PostProcessing:
     def filter_folders(self):
         for folder in self.subject_folder.iterdir():
             # Ignore folders that are blacklisted or don't contain @
-            if not folder.is_dir() or folder.name in config.FOLDER_IGNORE or '@' not in folder.name:
+            if (
+                not folder.is_dir()
+                or folder.name in config.FOLDER_IGNORE
+                or "@" not in folder.name
+            ):
                 continue
             yield folder
 
     @staticmethod
     def get_mat_num(folder: Path):
         try:
-            mn = np.loadtxt(folder / 'data' / 'mat_num.txt', delimiter=' - ', usecols=1, dtype=int, ndmin=1)
-            return mn[-1], np.unique(mn).size
+            # dtype has to be float since old data contained values too long for C long
+            # noinspection PyTypeChecker
+            mn = np.loadtxt(
+                folder / "data" / "mat_num.txt",
+                delimiter=" - ",
+                usecols=1,
+                dtype=float,
+                ndmin=1,
+            )
+            return int(mn[-1]), np.unique(mn).size
         except IOError:
-            return '', ''
+            return "", ""
 
     @staticmethod
     def load_txt(folder, ex):
-        return np.loadtxt(folder / 'data' / 'Exercise{}.txt'.format(ex + 1), delimiter=' - ', usecols=1,
-                          dtype=int, ndmin=1)
+        return np.loadtxt(
+            folder / "data" / "Exercise{}.txt".format(ex + 1),
+            delimiter=" - ",
+            usecols=1,
+            dtype=int,
+            ndmin=1,
+        )
 
     def write_csv(self, rows, name):
-        comma_file = self.post_dir / '{}_comma.csv'.format(name)
-        semicolon_file = self.post_dir / '{}_semicolon.csv'.format(name)
+        comma_file = self.post_dir / "{}.csv".format(name)
         try:
-            with comma_file.open('w') as c, semicolon_file.open('w') as c2:
+            with comma_file.open("w") as c:
+                writer = csv.writer(c)
                 for row in rows:
-                    a = list(map(str, row))
-                    c.write(','.join(a) + '\n')
-                    c2.write(';'.join(a) + '\n')
-            self.log.info('Wrote {} files'.format(name))
+                    writer.writerow(row)
+            self.log.info("Wrote {} files".format(name))
         except IOError:
-            self.log.error('Failed to save csv files')
-            self.log.error(traceback.format_exc())
+            self.log.exception("Failed to save csv files.")
 
     def generate_general(self):
-        rows = [['Student', 'Matr. Num', 'No. Matr. Num. used'] + ['Exercise {}'.format(x + 1) for x in
-                                                                   range(self.exercise_count)]]
+        rows = [
+            ["Student", "Matr. Num.", "No. Matr. Num. used"]
+            + ["Exercise {}".format(x + 1) for x in range(self.exercise_count)]
+        ]
 
         for folder in self.filter_folders():
             row = [folder.name]
@@ -73,16 +89,18 @@ class PostProcessing:
                     result = self.load_txt(folder, ex)
                     perc = np.max(result)
                 except IOError:
-                    perc = ''
+                    perc = ""
                 row.append(perc)
 
             rows.append(row)
 
-        self.write_csv(rows, 'GeneralInfo')
+        self.write_csv(rows, "GeneralInfo")
 
     def generate_attempts(self):
-        rows = [['Student', 'Matr. Num', 'No. Matr. Num. used'] + ['Exercise {}'.format(x + 1) for x in
-                                                                   range(self.exercise_count)]]
+        rows = [
+            ["Student", "Matr. Num", "No. Matr. Num. used"]
+            + ["Exercise {}".format(x + 1) for x in range(self.exercise_count)]
+        ]
 
         for folder in self.filter_folders():
             row = [folder.name]
@@ -98,12 +116,12 @@ class PostProcessing:
                     result = self.load_txt(folder, ex)
                     amount = len(result)
                 except IOError:
-                    amount = ''
+                    amount = ""
                 row.append(amount)
 
             rows.append(row)
 
-        self.write_csv(rows, 'AttemptsInfo')
+        self.write_csv(rows, "AttemptsInfo")
 
     def check_mat_num(self):
         cheaters = []
@@ -111,21 +129,23 @@ class PostProcessing:
             # Get amount of mat nums used and last num
             _, mn_count = self.get_mat_num(folder)
             if isinstance(mn_count, int) and mn_count > 1:
-                cheaters.append(folder.name + '\n')
+                cheaters.append(folder.name + "\n")
 
-        cheater_file = self.post_dir / 'cheaters.txt'
-        with cheater_file.open('w') as c:
-            c.write('List of students using several matriculation numbers:\n')
+        cheater_file = self.post_dir / "cheaters.txt"
+        with cheater_file.open("w") as c:
+            c.write("List of students using several matriculation numbers:\n")
             c.writelines(cheaters)
-        self.log.info('Wrote cheater file')
+        self.log.info("Wrote cheater file.")
 
     def generate_bars(self):
         if self.exercise_count < 10:
-            bar_labels = ['Ex. {}'.format(x + 1) for x in range(self.exercise_count + 1)]
+            bar_labels = [
+                "Ex. {}".format(x + 1) for x in range(self.exercise_count + 1)
+            ]
         else:
-            bar_labels = [str(x + 1 for x in range(self.exercise_count + 1))]
+            bar_labels = [str(x + 1) for x in range(self.exercise_count + 1)]
         passed = np.zeros(self.exercise_count)
-        total = np.zeros(self.exercise_count)
+        submitted = np.zeros(self.exercise_count)
 
         for folder in self.filter_folders():
             for ex in range(self.exercise_count):
@@ -135,37 +155,33 @@ class PostProcessing:
 
                     if highest_score == 100:
                         passed[ex] += 1
-                    total[ex] += 1
+                        submitted[ex] += 1
                 except IOError:
                     pass
 
         # Generate bar plots
         ind = np.arange(self.exercise_count)
-        width = 1.0
+        width = 0.4
 
         plt.clf()
-        p1 = plt.bar(ind, passed, width, color='lightgreen', zorder=3)
-        p2 = plt.bar(ind, total, width, color='lightcoral', zorder=2)
-        plt.ylabel('Number of students')
+        p1 = plt.bar(ind - width / 2, passed, width, color="lightgreen")
+        p2 = plt.bar(ind + width / 2, submitted, width, color="lightcoral")
+        plt.ylabel("Number of students")
+        plt.yticks(ind)
+        plt.xticks(ind, bar_labels)
 
-        ymax = np.max(total)
-        plt.xticks(ind + width / 2., bar_labels)
-
-        plt.ylim((0, ymax + 1))
-        plt.legend((p2[0], p1[0]), ('Submitted', 'Passed'))
-        plt.grid()
+        plt.ylim(top=np.max(submitted + 1))
+        plt.legend((p1[0], p2[0]), ("Passed", "Submitted"))
+        plt.grid(True)
 
         # Save plots
-        bars_png = self.post_dir / 'passed-submitted.png'
-        bars_svg = self.post_dir / 'passed-submitted.svg'
+        bars_png = self.post_dir / "passed-submitted.png"
 
         try:
             plt.savefig(bars_png)
-            plt.savefig(bars_svg)
-            self.log.info('Wrote bar plots')
+            self.log.info("Wrote bar plots")
         except IOError:
-            self.log.error('Failed to save bar plots')
-            self.log.error(traceback.format_exc())
+            self.log.exception("Failed to save bar plots.")
 
     def generate_histograms(self):
         # Collect data on amount of passed exercises and amount of tries
@@ -215,37 +231,52 @@ class PostProcessing:
                 x = np.arange(0, y_total.size, 1)
 
                 plt.clf()
-                plt.plot(x, y_total, 'k--')
-                plt.fill_between(x, y_total, y_passed, where=y_total > y_passed,
-                                 facecolor='lightcoral', interpolate=True,
-                                 label='Submitted', zorder=2)
-                plt.plot(x, y_passed, 'k-')
-                plt.fill_between(x, y_passed, 0, where=y_passed > 0,
-                                 facecolor='lightgreen', interpolate=True,
-                                 label='Passed', zorder=3)
+                plt.plot(x, y_total, "k--")
+                plt.fill_between(
+                    x,
+                    y_total,
+                    y_passed,
+                    where=y_total > y_passed,
+                    facecolor="lightcoral",
+                    interpolate=True,
+                    label="Submitted",
+                    zorder=2,
+                )
+                plt.plot(x, y_passed, "k-")
+                plt.fill_between(
+                    x,
+                    y_passed,
+                    0,
+                    where=y_passed > 0,
+                    facecolor="lightgreen",
+                    interpolate=True,
+                    label="Passed",
+                    zorder=3,
+                )
 
-                plt.xlabel('Number of attempts')
-                plt.ylabel('Number of students')
+                plt.xlabel("Number of attempts")
+                plt.xticks(np.arange(np.max(y_total)) + 1)
+                plt.ylabel("Number of students")
+                plt.yticks(np.arange(y_total.size))
 
                 plt.xlim((-0.6, y_total.size))
                 plt.ylim((0, np.max(y_total) + 1))
 
-                title = 'Distribution of the number of\nattempts per student, ex. {}'.format(ex + 1)
+                title = "Distribution of the number of\nattempts per student, ex. {}".format(
+                    ex + 1
+                )
                 plt.title(title)
 
-                plt.legend(loc='best')
+                plt.legend(loc="best")
                 plt.grid()
 
-                label = 'Exercise {}'.format(ex + 1)
-                bars_png = self.post_dir / (label + '_distr.png')
-                bars_svg = self.post_dir / (label + '_distr.svg')
+                label = "Exercise {}".format(ex + 1)
+                bars_png = self.post_dir / (label + "_distr.png")
                 try:
                     plt.savefig(bars_png)
-                    plt.savefig(bars_svg)
                 except IOError:
-                    self.log.error('Failed to save hist plots')
-                    self.log.error(traceback.format_exc())
-        self.log.info('Generated exercise histograms')
+                    self.log.exception("Failed to save hist plots.")
+        self.log.info("Generated exercise histograms.")
 
     def run(self):
         self.generate_general()
