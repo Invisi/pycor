@@ -69,7 +69,7 @@ class Commons:
             # openpyxl
             return ws.cell(row, column).value
 
-        offset = 16
+        offset = 13
         index_num = offset
         previous_exercise = 0
         exercise_row_begin = []
@@ -110,6 +110,9 @@ class Commons:
         for i in range(len(exercise_row_begin)):
             self.exercise_ranges.append([exercise_row_begin[i], exercise_row_end[i]])
 
+    def __str__(self):
+        return self.excel_file
+
 
 class Student(Commons):
     def __init__(self, excel_file: Path):
@@ -129,9 +132,10 @@ class Student(Commons):
             )
             ws = wb.active
 
-            self.mat_num = int(ws.cell(3, 2).value or -1)
+            self.mat_num = int(ws.cell(10, 2).value or -1)
             self.dummies = [
-                _.value for _ in [ws.cell(6, column) for column in range(1, 101)]
+                _.value
+                for _ in [ws.cell(9, column) for column in range(1, 8)]  # A9 - G9
             ]
 
             if self.mat_num < 0:
@@ -157,7 +161,9 @@ class Student(Commons):
         :return:
         """
         try:
-            exercise_file = self.parent_path / "Exercise{}_block.txt".format(exercise + 1)
+            exercise_file = self.parent_path / "Exercise{}_block.txt".format(
+                exercise + 1
+            )
 
             if exercise_file.exists():
                 # noinspection PyTypeChecker
@@ -171,7 +177,9 @@ class Student(Commons):
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
                 elif len(block_status) < max_attempts:
                     # Extend list
-                    block_status = block_status + [0] * (max_attempts - len(block_status))
+                    block_status = block_status + [0] * (
+                        max_attempts - len(block_status)
+                    )
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
 
                 if 0 < block_status[-1] < 100:
@@ -229,7 +237,9 @@ class Student(Commons):
             # Check if student failed his last try
             if 0 < block_status[-1] < 100:
                 blocked = True
-                self.log.info("Blocked %s for exercise %s", self.student_email, exercise + 1)
+                self.log.info(
+                    "Blocked %s for exercise %s", self.student_email, exercise + 1
+                )
 
             # Create user-specific data folder
             if not student_data.exists():
@@ -280,29 +290,34 @@ class Corrector(Commons):
             ws = wb.Worksheets(1)
 
             # Extract subject
-            self.subject_name = ws.Range("B1").Value
-            if not self.subject_name:
+            self.corrector_title = ws.Range("B1").Value
+            if not self.corrector_title:
+                utils.write_error(self.parent_path, "Ungültiger Name im Titel.")
                 raise ExcelFileException(
-                    "Empty subject field. Please specify a valid name."
+                    "Empty title field. Please specify a valid name."
                 )
 
             # Name that should be matched against submitted files
             self.codename = ws.Range("B2").Value
             if not self.codename:
+                utils.write_error(
+                    self.parent_path, "Dateiname konnte nicht ausgelesen werden."
+                )
                 raise ExcelFileException(
                     "Empty file name field. Please specify a valid name."
                 )
             elif ".xlsx" in self.codename:
                 # Remove file ending, might get added accidentally
-                # TODO: Yell at user?
                 self.codename = self.codename.replace(".xlsx", "")
 
             # Check deadline, allow for same-day submissions
-            deadline = [int(x or -1) for x in ws.Range("B9:D9").Value[0]]
-            if -1 in deadline:
+            self.deadline: datetime.datetime = ws.Range("B3").Value
+            if not isinstance(self.deadline, datetime.datetime):
+                utils.write_error(self.parent_path, "Ungültige Frist.")
                 raise ExcelFileException("Invalid deadline.")
 
-            self.deadline = datetime.date(deadline[2], deadline[1], deadline[0])
+            self.deadline = self.deadline.date()
+
             if (self.deadline - datetime.date.today()).days < 0:
                 self.log.info(
                     "Ignoring %s due to deadline (%s)",
@@ -311,8 +326,9 @@ class Corrector(Commons):
                 )
 
             # Get max amount of attempts
-            self.max_attempts = int(ws.Range("E12").Value or 0)
+            self.max_attempts = int(ws.Range("B4").Value or 0)
             if self.max_attempts < 1:
+                utils.write_error(self.parent_path, "Ungültige Anzahl an Versuchen.")
                 raise ExcelFileException("Invalid number of max attempts.")
 
             # Grab exercise info
@@ -322,8 +338,10 @@ class Corrector(Commons):
         except (pywintypes.com_error, TypeError, ValueError):
             self.log.exception("Failed to read information from corrector.")
             utils.write_error(
-                self.parent_path, f"Fehler beim Einlesen der corrector-Datei."
+                self.parent_path, "Fehler beim Einlesen der corrector-Datei."
             )
+        except ExcelFileException:
+            self.log.exception("Error in corrector file.")
         except AttributeError:
             self.log.exception("Looks like excel crashed. Quitting.")
             raise
@@ -342,7 +360,7 @@ class Corrector(Commons):
         the solution's name, value, and tolerance.
 
         :param mat_num: Student's matriculation number
-        :param dummies: List of dummy values (a1-a100)
+        :param dummies: List of dummy values (a1-a7)
         :return:
         """
         wb = None
@@ -356,8 +374,8 @@ class Corrector(Commons):
             ws = wb.Worksheets(1)
 
             # Copy values
-            ws.Range("B3").Value = mat_num
-            ws.Range("A6:CV6").Value = dummies
+            ws.Range("B10").Value = mat_num
+            ws.Range("B9:H9").Value = dummies
 
             # Collect solutions
             solutions = []
@@ -370,7 +388,8 @@ class Corrector(Commons):
                         {
                             "name": ws.Cells(cell_number, 2).Value,  # B{index}
                             "value": ws.Cells(cell_number, 3).Value,  # C{index}
-                            "tolerance": ws.Cells(cell_number, 4).Value,  # D{index}
+                            "tolerance_rel": ws.Cells(cell_number, 4).Value,  # D{index}
+                            "tolerance_abs": ws.Cells(cell_number, 5).Value,  # E
                         }
                     )
 

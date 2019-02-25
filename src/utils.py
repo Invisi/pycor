@@ -70,7 +70,7 @@ def write_error(subject_folder: Path, message: str):
     # Ignore folder after this
     with (subject_folder / "PYCOR_IGNORE.txt").open("a") as e:
         e.write(
-            "{} - Delete this file once the error specified in PYCOR_ERROR.txt is fixed.\n".format(
+            "{} - Löschen Sie diese Datei, sobald der Fehler in PYCOR_ERROR.txt behoben wurde.\n".format(
                 dt
             )
         )

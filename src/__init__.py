@@ -15,31 +15,48 @@ import utils
 __version__ = "2019-04-01_alpha"
 
 
-def compare(attempt: float or str, solution: float or str, tolerance: int or float):
+def compare(
+    attempt: float or str,
+    solution: float or str,
+    tolerance_rel: int or float or None,
+    tolerance_abs: int or float or None,
+):
+    """
+    Compares student's attempt to solution and returns True if the attempt is within either tolerance margin
+
+    :param attempt:
+    :param solution:
+    :param tolerance_rel:
+    :param tolerance_abs:
+    :return:
+    """
     try:
         # In case the student made a space after the comma...
         if isinstance(attempt, str) and isinstance(solution, float):
             attempt = float(attempt.replace(",", ".").replace(" ", ""))
 
-        # Make sure to convert ints to floats
-        if isinstance(solution, int):
-            solution = float(solution)
-        if isinstance(attempt, int):
-            attempt = float(attempt)
-        if isinstance(tolerance, int):
-            tolerance = float(tolerance)
-
         # Compare string values
         if isinstance(solution, str):
-            return solution == attempt
+            return solution.lower().strip() == attempt.lower().strip()
+
+        # Solution was empty
+        if solution is None:
+            return True
 
         # Compare numerical values
         if isinstance(solution, float):
-            return (
-                (1 - tolerance / 100) * solution
-                <= attempt
-                <= (1 + tolerance / 100) * solution
-            )
+            absolute, relative = False, False
+            if tolerance_rel is not None:
+                relative = (
+                    (1 - tolerance_rel / 100.0) * solution
+                    <= attempt
+                    <= (1 + tolerance_rel / 100.0) * solution
+                )
+            if tolerance_abs is not None:
+                absolute = (
+                    solution - tolerance_abs <= attempt <= solution + tolerance_abs
+                )
+            return absolute or relative
     except (TypeError, ValueError):  # Unexpected values or failed cast
         log.exception(
             "Unexpected values in comparison: Student: %s (%s), Corrector: %s (%s), Tolerance: %s (%s)",
@@ -47,8 +64,8 @@ def compare(attempt: float or str, solution: float or str, tolerance: int or flo
             type(attempt),
             solution,
             type(solution),
-            tolerance,
-            type(tolerance),
+            tolerance_rel,
+            type(tolerance_rel),
         )
     return False
 
@@ -82,7 +99,7 @@ def find_valid_filenames():
                         exc.parent_path,
                         (
                             f"Der Dateiname {exc.codename} ist bereits registriert "
-                            f'für das Modul "{valid_filenames[exc.codename.lower()].subject_name}!"'
+                            f'für Corrector "{valid_filenames[exc.codename.lower()].get_relevant_path()}!"'
                         ),
                     )
                     continue
@@ -90,7 +107,7 @@ def find_valid_filenames():
                 # Append subject and Corrector
                 log.info(
                     'Registered {} with file name "{}"'.format(
-                        exc.subject_name, exc.codename
+                        exc.corrector_title, exc.codename
                     )
                 )
                 valid_filenames[exc.codename.lower()] = exc
@@ -113,9 +130,10 @@ def main():
     # Correct each file
     for sf in student_files:
         try:
+            corrector = sf["corrector"]
             e = excel.Student(sf["student"])
 
-            real_solutions = sf["corrector"].generate_solutions(e.mat_num, e.dummies)
+            real_solutions = corrector.generate_solutions(e.mat_num, e.dummies)
 
             compared_solutions = []
 
@@ -129,7 +147,7 @@ def main():
 
                 # region First block/pass check for exercise
                 # Check if user is blocked or passed the exercise previously
-                blocked, passed = e.get_stats(idx, sf["corrector"].max_attempts)
+                blocked, passed = e.get_stats(idx, corrector.max_attempts)
                 if blocked:
                     log.info(
                         "Ignoring exercise %s since %s is already blocked",
@@ -185,9 +203,7 @@ def main():
                     / len(exercise_solved["correct"])
                     * 100
                 )
-                blocked, passed = e.update_stats(
-                    idx, perc, sf["corrector"].max_attempts
-                )
+                blocked, passed = e.update_stats(idx, perc, corrector.max_attempts)
                 if passed:
                     exercises_passed.append(idx)
                 if blocked:
@@ -205,9 +221,7 @@ def main():
             # May be empty if nothing was submitted
             if len(results) > 0:
                 mail_instance.send(
-                    e.student_email,
-                    f"Ergebnisse: {sf['corrector'].subject_name}",
-                    results,
+                    e.student_email, f"Ergebnisse: {corrector.corrector_title}", results
                 )
                 log.debug("Sending results")
 
@@ -216,7 +230,7 @@ def main():
                 mail_instance.send(
                     e.student_email,
                     *mail.Generator.exercise_passed(
-                        sf["corrector"].subject_name, exercises_passed, e.mat_num
+                        corrector.corrector_title, exercises_passed, e.mat_num
                     ),
                 )
                 log.debug("Sending passed")
@@ -226,7 +240,9 @@ def main():
                 mail_instance.send(
                     e.student_email,
                     *mail.Generator.exercise_blocked(
-                        sf["corrector"], exercises_blocked, sf["corrector"].max_attempts
+                        corrector.corrector_title,
+                        exercises_blocked,
+                        corrector.max_attempts,
                     ),
                 )
                 log.debug("Sending blocked")
@@ -236,7 +252,7 @@ def main():
                 mail_instance.send(
                     e.student_email,
                     *mail.Generator.exercise_congrats(
-                        sf["correctpr"].subject_name, e.mat_num
+                        corrector.corrector_title, e.mat_num
                     ),
                 )
                 log.debug("Sending final congratz")

@@ -21,3 +21,6 @@ venv/
 test/
 src/config.py
 logs/
+
+# Excel
+~$*

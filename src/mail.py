@@ -200,15 +200,14 @@ class Generator:
             f"""
             <html>
                 <p>
-                Liebe(r) Studierende(r),<br> <br>
-                die Hausübung ist <b>zwingend mit Ihrem FH-Aachen-Account ('*****@alumni.fh-aachen.de') einzusenden</b>.
-                Bitte senden Sie Ihre Lösungen erneut ein. Die erfolgte Abgabe wird nicht weiter verabeitet und nicht 
-                gewertet.
+                    Liebe(r) Studierende(r),<br><br>
+                    die Hausübung ist <b>zwingend mit Ihrem FH-Aachen-Account ('*****@alumni.fh-aachen.de') einzusenden
+                    </b>. Bitte senden Sie Ihre Lösungen erneut ein. Die erfolgte Abgabe wird nicht weiter verarbeitet 
+                    und nicht gewertet.
                 </p>
-            
                 <p>
-                Mit freundlichen Grüßen<br>
-                PyCor
+                    Mit freundlichen Grüßen<br>
+                    PyCor
                 </p>
             </html>
         """,
@@ -221,16 +220,15 @@ class Generator:
             """
             <html>
                 <p>
-                Liebe(r) Studierende(r),<br><br>
-                Sie haben <b>keine Excel-Datei eingereicht</b>. Das gültige Format ist .xlsx. <br>
-                Sollten Sie Schwierigkeiten mit dem Einreichen Ihrer Lösungen haben, senden Sie bitte eine Email mit dem
-                Betreff 'PROBLEM'. Wir nehmen schnellstmöglich Kontakt mit Ihnen auf. Allgemeine Fragen zur Bearbeitung 
-                der Hausübung werden nicht beantwortet!
+                    Liebe(r) Studierende(r),<br><br>
+                    Sie haben <b>keine Excel-Datei eingereicht</b>. Das gültige Format ist .xlsx.<br>
+                    Sollten Sie Schwierigkeiten mit dem Einreichen Ihrer Lösungen haben, senden Sie bitte eine Email 
+                    mit dem Betreff 'PROBLEM'. Wir nehmen schnellstmöglich Kontakt mit Ihnen auf. Allgemeine Fragen 
+                    zur Bearbeitung der Hausübung werden nicht beantwortet!
                 </p>
-            
                 <p>
-                Mit freundlichen Grüßen<br>
-                PyCor
+                    Mit freundlichen Grüßen<br>
+                    PyCor
                 </p>
             </html>
             """,
@@ -243,61 +241,60 @@ class Generator:
             f"""
             <html>
                 <p>
-                Liebe(r) Studierende(r),<br><br>
-                Sie haben eine Excel-Datei eingereicht, die keinem Modul zuzuordnen war. Möglicherweise wurde die Datei 
-                beim Herunterladen umbenannt. Bitte vergleichen Sie den Namen der eingeschickten Datei ({submitted_name}) 
-                mit Ihren Aufgabenblatt/der Datei auf Ilias.
-                Sollte der Fehler nicht ersichtlich sein, melden Sie sich bitte bei Ihren Professor oder der 
-                PyCor-Administration.
+                    Liebe(r) Studierende(r),<br><br>
+                    Sie haben eine Excel-Datei eingereicht, die keinem Modul zuzuordnen war. Möglicherweise wurde die 
+                    Datei beim Herunterladen umbenannt. Bitte vergleichen Sie den Namen der eingeschickten Datei 
+                    ({submitted_name}) mit Ihren Aufgabenblatt/der Datei auf Ilias.
+                    Sollte der Fehler nicht ersichtlich sein, melden Sie sich bitte bei Ihren Professor oder der 
+                    PyCor-Administration.
                 </p>
-    
                 <p>
-                Mit freundlichen Grüßen<br>
-                PyCor
+                    Mit freundlichen Grüßen<br>
+                    PyCor
                 </p>
             </html>
             """,
         )
 
     @staticmethod
-    def error_processing(subject_name: str) -> tuple:
+    def error_processing(corrector_title: str) -> tuple:
         return (
             "Fehler bei der Verarbeitung!",
             f"""
             <html>
                 <p>
-                Liebe(r) Studierende(r),<br><br>
-                Beim Verarbeiten Ihrer eingesendeten Datei sind Fehler aufgetreten. Möglicherweise ist sie defekt oder 
-                enthält nicht alle notwendingen Informationen wie beispielsweise die Matrikelnummer.
-                Sollte dies mehrmals auftreten, nehmen Sie bitte Kontakt mit Ihrem Professor oder der 
-                PyCor-Administration auf.
+                    Liebe(r) Studierende(r),<br><br>
+                    Beim Verarbeiten Ihrer eingesendeten Datei sind Fehler aufgetreten. Möglicherweise ist sie defekt 
+                    oder enthält nicht alle notwendingen Informationen wie beispielsweise die Matrikelnummer.
+                    Sollte dies mehrmals auftreten, nehmen Sie bitte Kontakt mit Ihrem Professor oder der 
+                    PyCor-Administration auf.
                 </p>
-
                 <p>
-                Mit freundlichen Grüßen<br>
-                <b>{subject_name}</b> und PyCor
+                    Mit freundlichen Grüßen<br>
+                    <b>{corrector_title}</b> und PyCor
                 </p>
             </html>
             """,
         )
 
     @staticmethod
-    def exercise_passed(subject_name: str, exercises: List[int], mat_num: int) -> tuple:
+    def exercise_passed(
+        corrector_title: str, exercises: List[int], mat_num: int
+    ) -> tuple:
         exercise_no = str([x + 1 for x in exercises])
         return (
             f"Teil(e) erfolgreich gelöst!  Mat. Num.: {mat_num}",
             f"""
             <html>
                 <p>
-                Liebe(r) Studierende(r),<br> <br>
-                Sie haben <b>Aufgabe(n) {exercise_no} erfolgreich gelöst</b>! Herzlichen Glückwunsch! 
-                Bitte drucken Sie diese Email aus und legen Sie sie zur Testatunterzeichnung zusammen mit Ihrer 
-                handschriftlichen Lösung vor.
+                    Liebe(r) Studierende(r),<br><br>
+                    Sie haben <b>Aufgabe(n) {exercise_no} erfolgreich gelöst</b>! Herzlichen Glückwunsch! 
+                    Bitte drucken Sie diese Email aus und legen Sie sie zur Testatunterzeichnung zusammen mit Ihrer 
+                    handschriftlichen Lösung vor.
                 </p>
-
                 <p>
-                Mit freundlichen Grüßen<br>
-                <b>{subject_name}</b> und PyCor
+                    Mit freundlichen Grüßen<br>
+                    <b>{corrector_title}</b> und PyCor
                 </p>
             </html>
         """,
@@ -305,7 +302,7 @@ class Generator:
 
     @staticmethod
     def exercise_blocked(
-        subject_name: str, exercises: List[int], max_tries: int
+        corrector_title: str, exercises: List[int], max_tries: int
     ) -> tuple:
         exercise_no = str([x + 1 for x in exercises])
         return (
@@ -313,36 +310,34 @@ class Generator:
             f"""
             <html>
                 <p>
-                Liebe(r) Studierende(r),<br> <br>
-                Sie haben <b>{max_tries} fehlerhafte Lösungen zu Aufgabe(n) {exercise_no} eingereicht</b> und wurden 
-                daher <b> vorübergehend gesperrt</b>. Weitere Lösungesversuche werden nur <b>nach persönlicher(!) 
-                Rücksprache</b> mit Ihrem Professor/den zuständigen HiWis zugelassen.
+                    Liebe(r) Studierende(r),<br><br>
+                    Sie haben <b>{max_tries} fehlerhafte Lösungen zu Aufgabe(n) {exercise_no} eingereicht</b> und 
+                    wurden daher <b>vorübergehend gesperrt</b>. Weitere Lösungesversuche werden nur <b>nach 
+                    persönlicher(!) Rücksprache</b> mit Ihrem Professor/den zuständigen HiWis zugelassen.
                 </p>
-
                 <p>
-                Mit freundlichen Grüßen<br>
-                <b>{subject_name}</b> und PyCor
+                    Mit freundlichen Grüßen<br>
+                    <b>{corrector_title}</b> und PyCor
                 </p>
             </html>
             """,
         )
 
     @staticmethod
-    def exercise_congrats(subject_name: str, mat_num: int) -> tuple:
+    def exercise_congrats(corrector_title: str, mat_num: int) -> tuple:
         return (
             f"Hausübung vollständig gelöst! Mat. Num.: {mat_num}",
             f"""
             <html>
                 <p>
-                Liebe(r) Studierende(r),<br> <br>
-                Sie haben <b>die gesamte Hausübung erfolgreich gelöst</b>! Herzlichen Glückwunsch! Bitte drucken Sie 
-                diese Email aus und legen Sie sie zur Testatunterzeichnung zusammen mit den handschriftlichen Lösungen 
-                aller Aufgabenteile vor.
+                    Liebe(r) Studierende(r),<br><br>
+                    Sie haben <b>die gesamte Hausübung erfolgreich gelöst</b>! Herzlichen Glückwunsch! Bitte drucken 
+                    Sie diese Email aus und legen Sie sie zur Testatunterzeichnung zusammen mit den handschriftlichen 
+                    Lösungen aller Aufgabenteile vor.
                 </p>
-            
                 <p>
-                Mit freundlichen Grüßen<br>
-                <b>{subject_name}</b> und PyCor
+                    Mit freundlichen Grüßen<br>
+                    <b>{corrector_title}</b> und PyCor
                 </p>
             </html>
             """,
@@ -361,12 +356,6 @@ class Generator:
 
         return f"""
                 Detaillierte Ergebnisse: <b>Teilaufgabe {solution['exercise'] + 1}</b><br/><br/>
-                <table>
-                    <tr>
-                        <th>Variable</th>
-                        <th>Korrektur</th>
-                    </tr>
-                    {ret}
-                </table>
+                <table><tr><th>Variable</th><th>Korrektur</th></tr>{ret}</table>
                 <hr/>
                 """
