@@ -81,7 +81,11 @@ def import_config():
 
         config_file = Path(sys.executable).parent / "config.py"
         if not config_file.exists():
-            print("config.py is missing!")
+            if not (Path(sys.executable).parent / "config.example.py").exists():
+                from shutil import copyfile
+                copyfile(Path(sys._MEIPASS) / "config.example.py", Path(sys.executable).parent / "config.example.py")
+
+            print("config.py is missing! An example config was created.")
             input("Press return to exit.")
             sys.exit(1)
 
