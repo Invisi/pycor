@@ -10,8 +10,6 @@ from pathlib import Path
 
 import sentry_sdk
 
-import config
-
 
 def setup_logger(level=logging.DEBUG):
     # Create logs folder
@@ -96,6 +94,7 @@ def import_config():
 
 
 def setup_sentry(release):
+    config = import_config()
     if config.DISABLE_OUTGOING_MAIL:
         environment = "dev"
     else:
