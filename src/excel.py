@@ -128,7 +128,7 @@ class Student(Commons):
             # Open workbook (read-only) and grab first worksheet
             # Ignore formulas, ignore Excel's "smart" types
             wb = openpyxl.load_workbook(
-                self.excel_file, read_only=True, data_only=True, guess_types=True
+                self.excel_file, read_only=True, data_only=True
             )
             ws = wb.active
 
@@ -171,8 +171,7 @@ class Student(Commons):
 
                 # Check if user's try list doesn't match the specified max_tries
                 if len(block_status) > max_attempts:
-                    # Shorten list
-                    # TODO: Only remove zeroes?
+                    # TODO: Shorten list and grab all attempts >0 in correct order
                     block_status = block_status[0:max_attempts]
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
                 elif len(block_status) < max_attempts:
@@ -324,6 +323,7 @@ class Corrector(Commons):
                     self.get_relevant_path(),
                     self.deadline,
                 )
+                return
 
             # Get max amount of attempts
             self.max_attempts = int(ws.Range("B4").Value or 0)
