@@ -25,9 +25,9 @@ class PostProcessing:
         for folder in self.subject_folder.iterdir():
             # Ignore folders that are blacklisted or don't contain @
             if (
-                not folder.is_dir()
-                or folder.name in config.FOLDER_IGNORE
-                or "@" not in folder.name
+                    not folder.is_dir()
+                    or folder.name in config.FOLDER_IGNORE
+                    or "@" not in folder.name
             ):
                 continue
             yield folder
@@ -65,63 +65,41 @@ class PostProcessing:
                 writer = csv.writer(c)
                 for row in rows:
                     writer.writerow(row)
-            self.log.info("Wrote {} files".format(name))
+            self.log.info("Wrote %s files", name)
         except IOError:
             self.log.exception("Failed to save csv files.")
 
-    def generate_general(self):
-        rows = [
+    def generate_attempt_info(self):
+        rows_general = [
             ["Student", "Matr. Num.", "No. Matr. Num. used"]
             + ["Exercise {}".format(x + 1) for x in range(self.exercise_count)]
         ]
+        rows_attempts = list(rows_general)
 
         for folder in self.filter_folders():
-            row = [folder.name]
-
             # Get amount of mat nums used and last num
             mat_num, mn_count = self.get_mat_num(folder)
-            row.append(mat_num)
-            row.append(mn_count)
 
-            # Percentage solved
+            row_general = [folder.name, mat_num, mn_count]
+            row_attempts = list(row_general)
+
+            # Percentage solved/Amount of tries
             for ex in range(self.exercise_count):
                 try:
                     result = self.load_txt(folder, ex)
                     perc = np.max(result)
-                except IOError:
-                    perc = ""
-                row.append(perc)
-
-            rows.append(row)
-
-        self.write_csv(rows, "GeneralInfo")
-
-    def generate_attempts(self):
-        rows = [
-            ["Student", "Matr. Num", "No. Matr. Num. used"]
-            + ["Exercise {}".format(x + 1) for x in range(self.exercise_count)]
-        ]
-
-        for folder in self.filter_folders():
-            row = [folder.name]
-
-            # Get amount of mat nums used and last num
-            mat_num, mn_count = self.get_mat_num(folder)
-            row.append(mat_num)
-            row.append(mn_count)
-
-            # Amount of tries
-            for ex in range(self.exercise_count):
-                try:
-                    result = self.load_txt(folder, ex)
                     amount = len(result)
                 except IOError:
+                    perc = ""
                     amount = ""
-                row.append(amount)
+                row_general.append(perc)
+                row_attempts.append(amount)
 
-            rows.append(row)
+            rows_attempts.append(row_attempts)
+            rows_general.append(row_general)
 
-        self.write_csv(rows, "AttemptsInfo")
+        self.write_csv(rows_attempts, "AttemptsInfo")
+        self.write_csv(rows_general, "GeneralInfo")
 
     def check_mat_num(self):
         cheaters = []
@@ -279,8 +257,7 @@ class PostProcessing:
         self.log.info("Generated exercise histograms.")
 
     def run(self):
-        self.generate_general()
-        self.generate_attempts()
+        self.generate_attempt_info()
         self.check_mat_num()
         self.generate_bars()
         self.generate_histograms()
