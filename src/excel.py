@@ -37,7 +37,7 @@ def setup_excel():
 class Commons:
     def __init__(self, excel_file: Path):
         self.excel_file = excel_file
-        self.parent_path = excel_file.parent.resolve()
+        self.parent_path = Path(os.path.abspath(excel_file.parent))
 
         self.log = logging.getLogger("PyCor").getChild("Excel")
         self.log.info("Opening %s", self.get_relevant_path())

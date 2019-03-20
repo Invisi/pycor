@@ -93,7 +93,7 @@ def find_valid_filenames():
 
     # Find configured groups
     for group in config.FOLDERS:
-        group = Path(group).resolve()
+        group = Path(os.path.abspath(group))
 
         # Iterate over subjects
         for subject in group.iterdir():
