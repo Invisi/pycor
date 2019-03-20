@@ -67,7 +67,7 @@ def compare(
                 absolute = (
                     solution - tolerance_abs <= attempt <= solution + tolerance_abs
                 )
-            return absolute or relative
+            return absolute or relative or attempt == solution
     except (TypeError, ValueError):  # Unexpected values or failed cast
         log.exception(
             "Unexpected values in comparison: Student: %s (%s), Corrector: %s (%s), Tolerance: %s (%s)",
@@ -202,7 +202,8 @@ def main():
                     exercise_solved["correct"][partial_idx] = compare(
                         partial,
                         corrector_solution[partial_idx]["value"],
-                        corrector_solution[partial_idx]["tolerance"],
+                        corrector_solution[partial_idx]["tolerance_rel"],
+                        corrector_solution[partial_idx]["tolerance_abs"],
                     )
                     exercise_solved["var_names"].append(
                         corrector_solution[partial_idx]["name"]
