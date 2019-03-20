@@ -4,6 +4,7 @@ import logging
 import os
 import time
 from pathlib import Path
+from sys import exit
 
 from cryptography.fernet import Fernet
 
@@ -42,6 +43,16 @@ def compare(
         # Solution was empty
         if solution is None:
             return True
+
+        log.debug(
+            "Comparing %s (%s) to %s (%s) with rel:%s abs:%s",
+            attempt,
+            type(attempt),
+            solution,
+            type(solution),
+            tolerance_rel,
+            tolerance_abs,
+        )
 
         # Compare numerical values
         if isinstance(solution, float):
@@ -106,9 +117,9 @@ def find_valid_filenames():
 
                 # Append subject and Corrector
                 log.info(
-                    'Registered {} with file name "{}"'.format(
-                        exc.corrector_title, exc.codename
-                    )
+                    'Registered %s with file name "%s"',
+                    exc.corrector_title,
+                    exc.codename,
                 )
                 valid_filenames[exc.codename.lower()] = exc
     return valid_filenames
@@ -226,7 +237,7 @@ def main():
                 log.debug("Sending results")
 
             # Send mail informing about passed exercises
-            if len(exercises_passed):
+            if len(exercises_passed) > 0:
                 mail_instance.send(
                     e.student_email,
                     *mail.Generator.exercise_passed(
@@ -255,7 +266,7 @@ def main():
                         corrector.corrector_title, e.mat_num
                     ),
                 )
-                log.debug("Sending final congratz")
+                log.debug("Sending final congrats")
             # endregion
         except excel.ExcelFileException:
             log.exception("Error during processing of student file.")
@@ -320,7 +331,7 @@ if __name__ == "__main__":
         main()
 
         # Wait x minutes between each run
-        log.info("Pausing for {} minutes".format(config.DELAY_SLEEP))
+        log.info("Pausing for %s minutes", config.DELAY_SLEEP)
         time.sleep(config.DELAY_SLEEP * 60)
 
     # TODO: In DB, Übergangsdatum: April 2019
