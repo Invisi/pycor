@@ -6,6 +6,7 @@ import imaplib
 import logging
 import os
 import smtplib
+import time
 from pathlib import Path
 from typing import Optional, List
 
@@ -43,8 +44,7 @@ class Mail:
 
     def smtp_login(self):
         try:
-            self.smtp = smtplib.SMTP_SSL(config.MAIL_SMTP)
-            self.smtp.login(self.username, self.password)
+            self.smtp = smtplib.SMTP(config.MAIL_SMTP, 25)
         except smtplib.SMTPException:
             self.log.exception("Failed to login to SMTP server.")
             raise LoginException
@@ -174,7 +174,7 @@ class Mail:
 
     def send(self, recipient: str, subject: str, content: str):
         msg = email.mime.multipart.MIMEMultipart("alternative")
-        msg["From"] = "PyCor <{}>".format(self.username)
+        msg["From"] = "PyCor <{}>".format(config.MAIL_FROM)
         msg["To"] = recipient
         msg["Subject"] = subject
 
@@ -187,6 +187,15 @@ class Mail:
             msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
             self.smtp.sendmail(self.username, recipient, msg.as_bytes())
             self.smtp_logout()
+            self.log.info("Sent mail to %s", recipient)
+
+            # Save mail to Sent
+            self.imap.append(
+                "Sent",
+                "\\Seen",
+                imaplib.Time2Internaldate(time.time()),
+                str(msg).encode("utf-8"),
+            )
         except LoginException:
             self.log.error("Failed to send mail to %s", recipient)
             raise

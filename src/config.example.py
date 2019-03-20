@@ -14,16 +14,15 @@ MAIL_PASS = "root"
 # IMAP server
 MAIL_IMAP = "mail.fh-aachen.de"
 # SMTP server
-MAIL_SMTP = "mail.fh-aachen.de:465"
+MAIL_SMTP = "relay.fh-aachen.de"
+# Spoof From header
+MAIL_FROM = "uebungen.bau@fh-aachen.de"
 
 # Disable mail sending
 DISABLE_OUTGOING_MAIL = True
 
 # Whether to flag mails as read
 MARK_MAILS_AS_READ = False
-
-# Delay (in s) between mailbox logins
-DELAY_MAILBOXES = 15
 
 # Delay (in m) between main loop
 DELAY_SLEEP = 2
