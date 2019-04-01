@@ -107,7 +107,8 @@ def setup_sentry(release):
         dsn=config.SENTRY_DSN,
         release=release,
         environment=environment,
-        ca_certs=str(Path(__file__).parent / "cacert.pem"),
+        send_default_pii=True,
+        ca_certs=str(Path(__file__).parent / "cacert.pem")
     )
 
 

@@ -129,6 +129,10 @@ def main():
     # Dict containing file name as key and Corrector as value
     valid_filenames = find_valid_filenames()
 
+    if len(valid_filenames) == 0:
+        log.info("There's nothing to do.")
+        return
+
     # Idling mail instance
     mail_instance = mail.Mail()
 
@@ -334,5 +338,3 @@ if __name__ == "__main__":
         # Wait x minutes between each run
         log.info("Pausing for %s minutes", config.DELAY_SLEEP)
         time.sleep(config.DELAY_SLEEP * 60)
-
-    # TODO: In DB, Übergangsdatum: April 2019

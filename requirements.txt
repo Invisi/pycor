@@ -4,4 +4,5 @@ matplotlib~=3.0.3
 numpy~=1.16.2
 openpyxl
 pywin32
+ipaddress
 sentry-sdk

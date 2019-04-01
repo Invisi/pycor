@@ -5,8 +5,22 @@ block_cipher = None
 a = Analysis(['src\\__init__.py'],
              pathex=['src'],
              binaries=[],
-             datas=[('src/config.example.py', '.')],
-             hiddenimports=['win32timezone'],
+             datas=[
+                ('src/config.example.py', '.'),
+                ('src/cacert.pem','.')
+             ],
+             hiddenimports=[
+                'ipaddress',
+                'sentry_sdk.integrations.argv',
+                'sentry_sdk.integrations.atexit',
+                'sentry_sdk.integrations.dedupe',
+                'sentry_sdk.integrations.excepthook',
+                'sentry_sdk.integrations.logging',
+                'sentry_sdk.integrations.modules',
+                'sentry_sdk.integrations.stdlib',
+                'sentry_sdk.integrations.threading',
+                'win32timezone'
+              ],
              hookspath=[],
              runtime_hooks=[],
              excludes=['config'],
