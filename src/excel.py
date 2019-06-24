@@ -127,9 +127,7 @@ class Student(Commons):
 
             # Open workbook (read-only) and grab first worksheet
             # Ignore formulas, ignore Excel's "smart" types
-            wb = openpyxl.load_workbook(
-                self.excel_file, read_only=True, data_only=True
-            )
+            wb = openpyxl.load_workbook(self.excel_file, read_only=True, data_only=True)
             ws = wb.active
 
             self.mat_num = int(ws.cell(10, 2).value or -1)

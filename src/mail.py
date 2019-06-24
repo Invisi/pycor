@@ -7,6 +7,7 @@ import logging
 import os
 import smtplib
 import time
+from email.utils import formatdate
 from pathlib import Path
 from typing import Optional, List
 
@@ -36,7 +37,7 @@ class Mail:
             self.imap = imaplib.IMAP4_SSL(config.MAIL_IMAP)
             self.imap.login(self.username, self.password)
             self.imap.select("INBOX")
-        except imaplib.IMAP4.error:
+        except (imaplib.IMAP4.error, ConnectionError):
             self.log.exception("Failed to login to IMAP server.")
             raise LoginException
 
@@ -177,6 +178,7 @@ class Mail:
         msg["From"] = "PyCor <{}>".format(config.MAIL_FROM)
         msg["To"] = recipient
         msg["Subject"] = subject
+        msg["Date"] = formatdate(localtime=True)
 
         # Don't send emails if in debug mode
         if hasattr(config, "DISABLE_OUTGOING_MAIL") and config.DISABLE_OUTGOING_MAIL:

@@ -25,9 +25,9 @@ class PostProcessing:
         for folder in self.subject_folder.iterdir():
             # Ignore folders that are blacklisted or don't contain @
             if (
-                    not folder.is_dir()
-                    or folder.name in config.FOLDER_IGNORE
-                    or "@" not in folder.name
+                not folder.is_dir()
+                or folder.name in config.FOLDER_IGNORE
+                or "@" not in folder.name
             ):
                 continue
             yield folder
