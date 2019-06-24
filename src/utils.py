@@ -83,7 +83,11 @@ def import_config():
         if not config_file.exists():
             if not (Path(sys.executable).parent / "config.example.py").exists():
                 from shutil import copyfile
-                copyfile(Path(sys._MEIPASS) / "config.example.py", Path(sys.executable).parent / "config.example.py")
+
+                copyfile(
+                    Path(sys._MEIPASS) / "config.example.py",
+                    Path(sys.executable).parent / "config.example.py",
+                )
 
             print("config.py is missing! An example config was created.")
             input("Press return to exit.")
@@ -103,12 +107,21 @@ def setup_sentry(release):
         environment = "dev"
     else:
         environment = "prod"
+
+    def before_send(event, hint):
+        if "exc_info" in hint:
+            _, exc_value, _ = hint["exc_info"]
+            if isinstance(exc_value, KeyboardInterrupt):
+                return None
+        return event
+
     sentry_sdk.init(
         dsn=config.SENTRY_DSN,
         release=release,
         environment=environment,
         send_default_pii=True,
-        ca_certs=str(Path(__file__).parent / "cacert.pem")
+        before_send=before_send,
+        ca_certs=str(Path(__file__).parent / "cacert.pem"),
     )
 
 
