@@ -102,6 +102,7 @@ class Mail:
                         # No file, multiple files or invalid file. Notify student
                         self.log.warn("Student submitted multiple files.")
                         self.send(student_email, *Generator.invalid_attachment())
+                        continue
 
                     subject_corrector = None
                     for valid_filename, corr in valid_filenames.items():
