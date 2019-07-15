@@ -78,7 +78,7 @@ class Mail:
                 ):
                     self.imap.store(message_id, "-FLAGS", "\\Seen")
 
-                msg = email.message_from_bytes(data[0][1])
+                msg: email.message.Message = email.message_from_bytes(data[0][1])
 
                 self.log.info(
                     "%s - Downloading message from %s (%s)",
@@ -86,6 +86,15 @@ class Mail:
                     msg["From"],
                     msg["Subject"],
                 )
+
+                # Forward mails to admin if subject contains "problem"
+                if "problem" in msg["Subject"].lower() and config.ADMIN_CONTACT:
+                    self.send(
+                        config.ADMIN_CONTACT,
+                        "PyCor: Problem",
+                        f'From: {msg["From"]}\nSubject: {msg["Subject"]}\n\n{msg.as_string()}',
+                    )
+                    continue
 
                 student_email = email.utils.parseaddr(msg["From"])[1]
 
