@@ -45,7 +45,10 @@ class Mail:
 
     def smtp_login(self):
         try:
-            self.smtp = smtplib.SMTP(config.MAIL_SMTP, 25)
+            self.smtp = smtplib.SMTP(config.MAIL_SMTP, 587)
+            self.smtp.ehlo()
+            self.smtp.starttls()
+            self.smtp.login(config.MAIL_USER, config.MAIL_PASS)
         except smtplib.SMTPException:
             self.log.exception("Failed to login to SMTP server.")
             raise LoginException
@@ -96,7 +99,7 @@ class Mail:
                     possible_files = [
                         _
                         for _ in msg.get_payload()
-                        if _.get_content_type() == EXCEL_MIME
+                        if not isinstance(_, str) and _.get_content_type() == EXCEL_MIME
                     ]
                     if len(possible_files) != 1:
                         # No file, multiple files or invalid file. Notify student

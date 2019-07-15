@@ -13,7 +13,7 @@ import mail
 import post
 import utils
 
-__version__ = "2019-09-24"
+__version__ = "2019-07-15"
 
 
 def compare(
