@@ -191,7 +191,7 @@ class Mail:
         try:
             self.smtp_login()
             msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
-            self.smtp.sendmail(self.username, recipient, msg.as_bytes())
+            self.smtp.sendmail(config.MAIL_FROM, recipient, msg.as_bytes())
             self.smtp_logout()
             self.log.info("Sent mail to %s", recipient)
 
