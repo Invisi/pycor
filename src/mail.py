@@ -55,7 +55,11 @@ class Mail:
 
     def smtp_logout(self):
         if self.smtp:
-            self.smtp.quit()
+            try:
+                self.smtp.quit()
+            except smtplib.SMTPServerDisconnected:
+                # Ignore disconnect, that's kinda what we want to do anyway
+                pass
 
     def check_inbox(self, valid_filenames: dict) -> Optional[List[dict]]:
         ret, message_str = self.imap.search(None, "(UNSEEN)")
