@@ -128,11 +128,19 @@ class Mail:
                     if not subject_corrector:
                         # Unknown subject. Notify student
                         self.log.warn("Student submitted unknown subject.")
+
+                        filename = possible_files[0].get_filename()
+                        if "=?" in filename:
+                            try:
+                                header = email.header.decode_header(filename)
+                                if len(header) > 0:
+                                    content, encoding = header[0]
+                                    filename = content.decode(encoding)
+                            except email.errors.HeaderParseError:
+                                self.log.error("Failed to parse header for filename")
+
                         self.send(
-                            student_email,
-                            *Generator.unknown_attachment(
-                                possible_files[0].get_filename()
-                            ),
+                            student_email, *Generator.unknown_attachment(filename)
                         )
                         continue
 
