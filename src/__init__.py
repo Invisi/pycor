@@ -13,7 +13,16 @@ import mail
 import post
 import utils
 
-__version__ = "2019-07-15"
+__version__ = "2019-10-14"
+
+
+def switch_tolerance(lower_tolerance, higher_tolerance):
+    if lower_tolerance > higher_tolerance:
+        t = higher_tolerance
+        higher_tolerance = lower_tolerance
+        lower_tolerance = t
+
+    return lower_tolerance, higher_tolerance
 
 
 def compare(
@@ -58,15 +67,17 @@ def compare(
         if isinstance(solution, float):
             absolute, relative = False, False
             if tolerance_rel is not None:
-                relative = (
-                    (1 - tolerance_rel / 100.0) * solution
-                    <= attempt
-                    <= (1 + tolerance_rel / 100.0) * solution
+                lower_tolerance, higher_tolerance = switch_tolerance(
+                    (1 - tolerance_rel / 100.0) * solution,
+                    (1 + tolerance_rel / 100.0) * solution,
                 )
+
+                relative = lower_tolerance <= attempt <= higher_tolerance
             if tolerance_abs is not None:
-                absolute = (
-                    solution - tolerance_abs <= attempt <= solution + tolerance_abs
+                lower_tolerance, higher_tolerance = switch_tolerance(
+                    solution - tolerance_abs, solution + tolerance_abs
                 )
+                absolute = lower_tolerance <= attempt <= higher_tolerance
             return absolute or relative or attempt == solution
     except (TypeError, ValueError):  # Unexpected values or failed cast
         log.exception(
