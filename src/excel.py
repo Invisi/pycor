@@ -295,7 +295,7 @@ class Corrector(Commons):
                 )
 
             # Name that should be matched against submitted files
-            self.codename = ws.Range("B2").Value
+            self.codename = str(ws.Range("B2").Value).strip()
             if not self.codename:
                 utils.write_error(
                     self.parent_path, "Dateiname konnte nicht ausgelesen werden."
