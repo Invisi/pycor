@@ -122,7 +122,10 @@ class Mail:
 
                     subject_corrector = None
                     for valid_filename, corr in valid_filenames.items():
-                        if valid_filename + ".xlsx" == possible_files[0].get_filename():
+                        if (
+                            f"{valid_filename}.xlsx"
+                            == possible_files[0].get_filename().lower()
+                        ):
                             subject_corrector = corr
 
                     if not subject_corrector:
