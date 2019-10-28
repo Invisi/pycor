@@ -11,6 +11,8 @@ from email.utils import formatdate
 from pathlib import Path
 from typing import Optional, List
 
+import typing
+
 import excel
 import utils
 
@@ -89,11 +91,11 @@ class Mail:
 
                 # Forward mails to admin if subject contains "problem"
                 if "problem" in msg["Subject"].lower() and config.ADMIN_CONTACT:
-                    self.send(
-                        config.ADMIN_CONTACT,
-                        "PyCor: Problem",
-                        f'From: {msg["From"]}\nSubject: {msg["Subject"]}\n\n{msg.as_string()}',
-                    )
+                    msg.replace_header("Subject", f"PyCor: {msg['Subject']} from {msg['From']}")
+                    msg.replace_header("From", "PyCor <{}>".format(config.MAIL_FROM))
+                    msg.replace_header("To", config.ADMIN_CONTACT)
+                    msg.replace_header("Date", formatdate(localtime=True))
+                    self.send(config.ADMIN_CONTACT, "", msg)
                     continue
 
                 student_email = email.utils.parseaddr(msg["From"])[1]
@@ -201,12 +203,22 @@ class Mail:
 
         return file_path
 
-    def send(self, recipient: str, subject: str, content: str):
-        msg = email.mime.multipart.MIMEMultipart("alternative")
-        msg["From"] = "PyCor <{}>".format(config.MAIL_FROM)
-        msg["To"] = recipient
-        msg["Subject"] = subject
-        msg["Date"] = formatdate(localtime=True)
+    def send(
+        self,
+        recipient: str,
+        subject: str,
+        content: typing.Union[str, email.message.Message],
+    ):
+        # Mail is forwarded
+        if isinstance(content, email.message.Message):
+            msg = content
+        else:
+            # Mail should be generated
+            msg = email.mime.multipart.MIMEMultipart("alternative")
+            msg["From"] = "PyCor <{}>".format(config.MAIL_FROM)
+            msg["To"] = recipient
+            msg["Subject"] = subject
+            msg["Date"] = formatdate(localtime=True)
 
         # Don't send emails if in debug mode
         if hasattr(config, "DISABLE_OUTGOING_MAIL") and config.DISABLE_OUTGOING_MAIL:
@@ -214,7 +226,11 @@ class Mail:
             return
         try:
             self.smtp_login()
-            msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
+
+            # Attach html content if it's not a forwarded mail
+            if isinstance(content, str):
+                msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
+
             self.smtp.sendmail(config.MAIL_FROM, recipient, msg.as_bytes())
             self.smtp_logout()
             self.log.info("Sent mail to %s", recipient)
