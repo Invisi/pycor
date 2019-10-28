@@ -61,7 +61,7 @@ class PostProcessing:
     def write_csv(self, rows, name):
         comma_file = self.post_dir / "{}.csv".format(name)
         try:
-            with comma_file.open("w") as c:
+            with comma_file.open("w", newline='') as c:
                 writer = csv.writer(c)
                 for row in rows:
                     writer.writerow(row)
