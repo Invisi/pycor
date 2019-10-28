@@ -253,6 +253,28 @@ class Generator:
         )
 
     @staticmethod
+    def malformed_attachment() -> tuple:
+        return (
+            "Ungültige Excel-Datei im Anhang!",
+            """
+            <html>
+                <p>
+                    Liebe(r) Studierende(r),<br><br>
+                    Sie haben eine scheinbar <b>ungültige</b> Excel-Datei eingereicht. Bitte stellen Sie sicher, dass 
+                    Sie eine aktuelle Datei als Vorlage genutzt haben.<br>
+                    Sollte dies bereits die aktuellste Version sein, wenden Sie sich bitte an Ihre(n) Dozenten/-in oder 
+                    Professor/-in, oder senden Sie uns eine Mail mit dem Betreff 'Problem'. 
+                    Wir nehmen schnellstmöglich Kontakt mit Ihnen auf.
+                </p>
+                <p>
+                    Mit freundlichen Grüßen<br>
+                    PyCor
+                </p>
+            </html>
+            """,
+        )
+
+    @staticmethod
     def invalid_attachment() -> tuple:
         return (
             "Keine Excel-Datei im Anhang!",
@@ -262,7 +284,7 @@ class Generator:
                     Liebe(r) Studierende(r),<br><br>
                     Sie haben <b>keine Excel-Datei eingereicht</b>. Das gültige Format ist .xlsx.<br>
                     Sollten Sie Schwierigkeiten mit dem Einreichen Ihrer Lösungen haben, senden Sie bitte eine Email 
-                    mit dem Betreff 'PROBLEM'. Wir nehmen schnellstmöglich Kontakt mit Ihnen auf. Allgemeine Fragen 
+                    mit dem Betreff 'Problem'. Wir nehmen schnellstmöglich Kontakt mit Ihnen auf. Allgemeine Fragen 
                     zur Bearbeitung der Hausübung werden nicht beantwortet!
                 </p>
                 <p>

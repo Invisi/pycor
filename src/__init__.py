@@ -159,6 +159,14 @@ def main():
             corrector = sf["corrector"]
             e = excel.Student(sf["student"])
 
+            # Couldn't find any solutions in submitted file
+            if len(e.solutions) == 0:
+                log.warning("Found no solutions in submitted file")
+                mail_instance.send(
+                    e.student_email, *mail.Generator.malformed_attachment()
+                )
+                continue
+
             real_solutions = corrector.generate_solutions(e.mat_num, e.dummies)
 
             compared_solutions = []
