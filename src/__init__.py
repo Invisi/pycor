@@ -169,6 +169,14 @@ def main():
 
             real_solutions = corrector.generate_solutions(e.mat_num, e.dummies)
 
+            # Couldn't find any solutions in submitted file
+            if len(e.solutions) != len(real_solutions):
+                log.warning("Found more/fewer tasks in submitted file")
+                mail_instance.send(
+                    e.student_email, *mail.Generator.malformed_attachment()
+                )
+                continue
+
             compared_solutions = []
 
             # List of passed/blocked exercises
