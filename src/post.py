@@ -62,6 +62,7 @@ class PostProcessing:
         comma_file = self.post_dir / "{}.csv".format(name)
         try:
             with comma_file.open("w", newline='') as c:
+                c.write("sep=,\r\n")
                 writer = csv.writer(c)
                 for row in rows:
                     writer.writerow(row)
