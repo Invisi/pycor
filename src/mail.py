@@ -256,8 +256,8 @@ class Generator:
             <html>
                 <p>
                     Liebe(r) Studierende(r),<br><br>
-                    die Hausübung ist <b>zwingend mit Ihrem FH-Aachen-Account ('*****@alumni.fh-aachen.de') einzusenden
-                    </b>. Bitte senden Sie Ihre Lösungen erneut ein. Die erfolgte Abgabe wird nicht weiter verarbeitet 
+                    die Hausübung ist <b>zwingend mit Ihrem FH-Aachen-Account ('*****@alumni.fh-aachen.de') einzusenden.
+                    </b> Bitte senden Sie Ihre Lösungen erneut ein. Die erfolgte Abgabe wird nicht weiter verarbeitet 
                     und nicht gewertet.
                 </p>
                 <p>
@@ -389,7 +389,7 @@ class Generator:
                 <p>
                     Liebe(r) Studierende(r),<br><br>
                     Sie haben <b>{max_tries} fehlerhafte Lösungen zu Aufgabe(n) {exercise_no} eingereicht</b> und 
-                    wurden daher <b>vorübergehend gesperrt</b>. Weitere Lösungesversuche werden nur <b>nach 
+                    wurden daher <b>vorübergehend gesperrt</b>. Weitere Lösungsversuche werden nur <b>nach 
                     persönlicher(!) Rücksprache</b> mit Ihrem Professor/den zuständigen HiWis zugelassen.
                 </p>
                 <p>
