@@ -364,10 +364,12 @@ if __name__ == "__main__":
         main()
 
         # Wait until a multiple of DELAY_SLEEP is on the clock
-        current_time = datetime.datetime.now().time()
+        current = datetime.datetime.now()
+        current_time = current.time()
         sleep_time = (
             abs(current_time.minute % config.DELAY_SLEEP - config.DELAY_SLEEP) * 60
             - current_time.second
         )
-        log.info("Pausing for %s seconds", sleep_time)
+        next_execution = current + datetime.timedelta(seconds=sleep_time)
+        log.info("Pausing until %s", next_execution.strftime("%H:%M:%S"))
         time.sleep(sleep_time)
