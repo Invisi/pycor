@@ -295,7 +295,7 @@ class Corrector(Commons):
                 )
 
             # Name that should be matched against submitted files
-            self.codename = str(ws.Range("B2").Value).strip()
+            self.codename = ws.Range("B2").Value
             if not self.codename:
                 utils.write_error(
                     self.parent_path, "Dateiname konnte nicht ausgelesen werden."
@@ -306,6 +306,8 @@ class Corrector(Commons):
             elif ".xlsx" in self.codename:
                 # Remove file ending, might get added accidentally
                 self.codename = self.codename.replace(".xlsx", "")
+
+            self.codename = str(self.codename).strip()
 
             # Check deadline, allow for same-day submissions
             self.deadline: datetime.datetime = ws.Range("B3").Value
