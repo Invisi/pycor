@@ -24,8 +24,8 @@ DISABLE_OUTGOING_MAIL = True
 # Whether to flag mails as read
 MARK_MAILS_AS_READ = False
 
-# Delay (in m) between main loop
-DELAY_SLEEP = 2
+# Minute to run at (multiple of n). E.g.: 5 results in 8:05, 8:10, 8:15...
+DELAY_SLEEP = 10
 
 # Passphrase for corrector pws files (Base64)
 PSW_PASSPHRASE = 'gC9VGy09lEk7zK1257Pzj5-mDPclX_FScqLC2RLObyU='

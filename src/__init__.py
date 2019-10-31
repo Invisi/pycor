@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import getpass
 import logging
 import os
@@ -362,6 +363,11 @@ if __name__ == "__main__":
     while True:
         main()
 
-        # Wait x minutes between each run
-        log.info("Pausing for %s minutes", config.DELAY_SLEEP)
-        time.sleep(config.DELAY_SLEEP * 60)
+        # Wait until a multiple of DELAY_SLEEP is on the clock
+        current_time = datetime.datetime.now().time()
+        sleep_time = (
+            abs(current_time.minute % config.DELAY_SLEEP - config.DELAY_SLEEP) * 60
+            - current_time.second
+        )
+        log.info("Pausing for %s seconds", sleep_time)
+        time.sleep(sleep_time)
