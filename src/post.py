@@ -61,7 +61,7 @@ class PostProcessing:
     def write_csv(self, rows, name):
         comma_file = self.post_dir / "{}.csv".format(name)
         try:
-            with comma_file.open("w", newline='') as c:
+            with comma_file.open("w", newline="") as c:
                 c.write("sep=,\r\n")
                 writer = csv.writer(c)
                 for row in rows:
@@ -134,7 +134,7 @@ class PostProcessing:
 
                     if highest_score == 100:
                         passed[ex] += 1
-                        submitted[ex] += 1
+                    submitted[ex] += 1
                 except IOError:
                     pass
 
@@ -146,7 +146,7 @@ class PostProcessing:
         p1 = plt.bar(ind - width / 2, passed, width, color="lightgreen")
         p2 = plt.bar(ind + width / 2, submitted, width, color="lightcoral")
         plt.ylabel("Number of students")
-        plt.yticks(ind)
+        plt.yticks(np.arange(np.max(submitted) + 10, step=10))
         plt.xticks(ind, bar_labels)
 
         plt.ylim(top=np.max(submitted + 1))
@@ -196,26 +196,26 @@ class PostProcessing:
         for ex in range(self.exercise_count):
             # Ignore missing exercise data
             if len(total[:, ex]) >= 1:
-                y_total = np.bincount(total[:, ex])
+                y_submitted = np.bincount(total[:, ex])
                 y_passed = np.bincount(passed[:, ex])
 
-                y_total[0] = 0
+                y_submitted[0] = 0
                 y_passed[0] = 0
 
-                for i in range(len(y_passed), len(y_total)):
+                for i in range(len(y_passed), len(y_submitted)):
                     y_passed = np.append(y_passed, 0)
 
-                y_total = np.append(y_total, 0)
+                y_submitted = np.append(y_submitted, 0)
                 y_passed = np.append(y_passed, 0)
-                x = np.arange(0, y_total.size, 1)
+                x = np.arange(0, y_submitted.size, 1)
 
                 plt.clf()
-                plt.plot(x, y_total, "k--")
+                plt.plot(x, y_submitted, "k--")
                 plt.fill_between(
                     x,
-                    y_total,
+                    y_submitted,
                     y_passed,
-                    where=y_total > y_passed,
+                    where=y_submitted > y_passed,
                     facecolor="lightcoral",
                     interpolate=True,
                     label="Submitted",
@@ -234,12 +234,12 @@ class PostProcessing:
                 )
 
                 plt.xlabel("Number of attempts")
-                plt.xticks(np.arange(np.max(y_total)) + 1)
+                plt.xticks(np.arange(len(y_submitted)))
                 plt.ylabel("Number of students")
-                plt.yticks(np.arange(y_total.size))
+                plt.yticks(np.arange(np.max(y_submitted) + 10, step=10))
 
-                plt.xlim((-0.6, y_total.size))
-                plt.ylim((0, np.max(y_total) + 1))
+                plt.xlim((-0.6, y_submitted.size))
+                plt.ylim((0, np.max(y_submitted) + 1))
 
                 title = "Distribution of the number of\nattempts per student, ex. {}".format(
                     ex + 1
