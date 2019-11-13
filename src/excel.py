@@ -123,7 +123,7 @@ class Student(Commons):
             # Open workbook (read-only) and grab first worksheet
             # Ignore formulas, ignore Excel's "smart" types
             wb = openpyxl.load_workbook(self.excel_file, read_only=True, data_only=True)
-            ws = wb.active
+            ws = wb.worksheets[0]
 
             self.mat_num = int(ws.cell(10, 2).value or -1)
             self.dummies = [
@@ -282,7 +282,7 @@ class Corrector(Commons):
                     wb = openpyxl.load_workbook(
                         self.excel_file, read_only=True, data_only=True
                     )
-                    ws = wb.active
+                    ws = wb.worksheets[0]
             else:
                 self.log.debug("File requires a password, can't open without Excel")
                 """
