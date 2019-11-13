@@ -146,7 +146,8 @@ class PostProcessing:
         p1 = plt.bar(ind - width / 2, passed, width, color="lightgreen")
         p2 = plt.bar(ind + width / 2, submitted, width, color="lightcoral")
         plt.ylabel("Number of students")
-        plt.yticks(np.arange(np.max(submitted) + 10, step=10))
+        steps = 10 if np.max(submitted) > 40 else 5
+        plt.yticks(np.arange(np.max(submitted) + steps, step=steps))
         plt.xticks(ind, bar_labels)
 
         plt.ylim(top=np.max(submitted + 1))
@@ -236,7 +237,8 @@ class PostProcessing:
                 plt.xlabel("Number of attempts")
                 plt.xticks(np.arange(len(y_submitted)))
                 plt.ylabel("Number of students")
-                plt.yticks(np.arange(np.max(y_submitted) + 10, step=10))
+                steps = 10 if np.max(y_submitted) > 40 else 5
+                plt.yticks(np.arange(np.max(y_submitted) + steps, step=steps))
 
                 plt.xlim((-0.6, y_submitted.size))
                 plt.ylim((0, np.max(y_submitted) + 1))
