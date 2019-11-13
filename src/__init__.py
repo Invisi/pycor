@@ -14,7 +14,7 @@ import mail
 import post
 import utils
 
-__version__ = "2019-10-30"
+__version__ = "2019-11-13"
 
 
 def switch_tolerance(lower_tolerance, higher_tolerance):
@@ -128,11 +128,7 @@ def find_valid_filenames():
                     continue
 
                 # Append subject and Corrector
-                log.info(
-                    'Registered %s with file name "%s"',
-                    exc.corrector_title,
-                    exc.codename,
-                )
+                log.info('Registered "%s" for "%s"', exc.codename, exc.corrector_title)
                 valid_filenames[exc.codename.lower()] = exc
     return valid_filenames
 

@@ -7,6 +7,7 @@ from typing import Optional
 import numpy as np
 import openpyxl.worksheet.worksheet
 import pywintypes
+import typing
 import win32com.client
 from cryptography import fernet
 
@@ -51,23 +52,17 @@ class Commons:
     def set_exercise_rows(
         self,
         ws: openpyxl.worksheet.worksheet.Worksheet or win32com.client.CDispatch,
+        get_cell: typing.Callable,
         solutions: bool = False,
-        excel=False,
     ):
         """
         Extract amount of exercises, their ranges, and (if needed) entered solutions
 
         :param ws: :class:`openpyxl.worksheet.worksheet.Worksheet` instance to work on
+        :param get_cell: Function to access the cells
         :param solutions: Whether to grab the solutions or not
-        :param excel: Whether the given worksheet is accessed via Excel or via openpyxl
         :return:
         """
-
-        def get_cell(row, column):
-            if excel:  # Excel
-                return ws.Cells(row, column).Value
-            # openpyxl
-            return ws.cell(row, column).value
 
         offset = 13
         index_num = offset
@@ -142,7 +137,9 @@ class Student(Commons):
                 )
                 raise ExcelFileException("Invalid mat_num")
 
-            self.set_exercise_rows(ws, solutions=True)
+            self.set_exercise_rows(
+                ws, solutions=True, get_cell=lambda r, c: ws.cell(r, c).value
+            )
             self.valid = True
         except (TypeError, ValueError):
             self.log.exception()
@@ -261,7 +258,7 @@ class Student(Commons):
 
 
 class Corrector(Commons):
-    def __init__(self, excel_file: Path):
+    def __init__(self, excel_file: Path, simple_validation=True):
         super().__init__(excel_file)
         self.password = self.find_password()
 
@@ -276,18 +273,37 @@ class Corrector(Commons):
             # Whether the file is considered valid
             self.valid = False
 
-            """
-            Open workbook in Excel. It has to be Excel because workbook-wide encryption creates a weird FAT-like 
-            compound archive that can't be read with any (currently) existing library.
-            """
-            excel = setup_excel()
-            wb = excel.Workbooks.Open(self.excel_file, 0, False, None, self.password)
+            if simple_validation and self.password == "":
+                if self.excel_file.suffix == ".xls":  # openpyxl only handles xlsx/xlsm
+                    self.log.warning("Found .xls file, trying to convert.")
+                    self.convert_to_xlsx()
+                    return
+                else:
+                    wb = openpyxl.load_workbook(
+                        self.excel_file, read_only=True, data_only=True
+                    )
+                    ws = wb.active
+            else:
+                self.log.debug("File requires a password, can't open without Excel")
+                """
+                   Open workbook in Excel. It has to be Excel because workbook-wide encryption creates a weird FAT-like 
+                   compound archive that can't be read with any (currently) existing library.
+                """
+                excel = setup_excel()
+                wb = excel.Workbooks.Open(
+                    self.excel_file, 0, False, None, self.password
+                )
+                ws = wb.Worksheets(1)
 
-            # Grab first worksheet
-            ws = wb.Worksheets(1)
+            def get_cell(row, column):
+                # noinspection PyProtectedMember
+                if isinstance(ws, openpyxl.worksheet._read_only.ReadOnlyWorksheet):
+                    return ws.cell(row, column).value
+                else:
+                    return ws.Cells(row, column).Value
 
             # Extract subject
-            self.corrector_title = ws.Range("B1").Value
+            self.corrector_title = get_cell(1, 2)  # B1
             if not self.corrector_title:
                 utils.write_error(self.parent_path, "Ungültiger Name im Titel.")
                 raise ExcelFileException(
@@ -295,7 +311,7 @@ class Corrector(Commons):
                 )
 
             # Name that should be matched against submitted files
-            self.codename = ws.Range("B2").Value
+            self.codename = get_cell(2, 2)  # B2
             if not self.codename:
                 utils.write_error(
                     self.parent_path, "Dateiname konnte nicht ausgelesen werden."
@@ -310,7 +326,7 @@ class Corrector(Commons):
             self.codename = str(self.codename).strip()
 
             # Check deadline, allow for same-day submissions
-            self.deadline: datetime.datetime = ws.Range("B3").Value
+            self.deadline: datetime.datetime = get_cell(3, 2)  # B3
             if not isinstance(self.deadline, datetime.datetime):
                 utils.write_error(self.parent_path, "Ungültige Frist.")
                 raise ExcelFileException("Invalid deadline.")
@@ -326,13 +342,13 @@ class Corrector(Commons):
                 return
 
             # Get max amount of attempts
-            self.max_attempts = int(ws.Range("B4").Value or 0)
+            self.max_attempts = int(get_cell(4, 2) or 0)  # B4
             if self.max_attempts < 1:
                 utils.write_error(self.parent_path, "Ungültige Anzahl an Versuchen.")
                 raise ExcelFileException("Invalid number of max attempts.")
 
             # Grab exercise info
-            self.set_exercise_rows(ws, excel=True)
+            self.set_exercise_rows(ws, get_cell=get_cell)
 
             self.valid = True
         except (pywintypes.com_error, TypeError, ValueError):
@@ -347,11 +363,14 @@ class Corrector(Commons):
             raise
         finally:
             # Close WorkBook and Excel
-            if wb:
-                wb.Close(SaveChanges=False)
             if excel:
+                if wb:
+                    wb.Close(SaveChanges=False)
                 excel.Application.Quit()
                 del excel
+            else:
+                if wb and isinstance(wb, openpyxl.worksheet.worksheet.Worksheet):
+                    wb.close()
 
     def generate_solutions(self, mat_num: int, dummies: []) -> Optional[list]:
         """
@@ -404,6 +423,43 @@ class Corrector(Commons):
             # Close WorkBook and Excel
             if wb:
                 wb.Close(SaveChanges=False)
+            if excel:
+                excel.Application.Quit()
+                del excel
+
+    def convert_to_xlsx(self):
+        """
+        Convert current Excel file to .xlsx for openpyxl
+        :return:
+        """
+        if self.excel_file.with_suffix(".xlsx").exists():
+            self.log.warning(".xlsx already exists")
+            self.excel_file.rename(
+                self.excel_file.with_name(self.excel_file.name + "_konvertiert")
+            )
+            return
+
+        excel = None
+        wb = None
+        try:
+            excel = setup_excel()
+            wb = excel.Workbooks.Open(self.excel_file, 0, False, None, self.password)
+            wb.SaveAs(
+                str(self.excel_file.with_suffix(".xlsx")), FileFormat=51
+            )  # 51 = .xlsx
+            wb.Close(SaveChanges=False)
+
+            # Rename old file
+            self.excel_file.rename(
+                self.excel_file.with_name(self.excel_file.name + "_konvertiert")
+            )
+        except (pywintypes.com_error, TypeError, ValueError, AttributeError):
+            self.log.exception("Failed to convert Excel file.")
+            utils.write_error(
+                self.parent_path,
+                "Fehler beim Konvertieren der Corrector-Datei. Bitte speichern Sie sie als .xlsx/.xlsm.",
+            )
+        finally:
             if excel:
                 excel.Application.Quit()
                 del excel
