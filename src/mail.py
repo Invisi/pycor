@@ -91,7 +91,9 @@ class Mail:
 
                 # Forward mails to admin if subject contains "problem"
                 if "problem" in msg["Subject"].lower() and config.ADMIN_CONTACT:
-                    msg.replace_header("Subject", f"PyCor: {msg['Subject']} from {msg['From']}")
+                    msg.replace_header(
+                        "Subject", f"PyCor: {msg['Subject']} from {msg['From']}"
+                    )
                     msg.replace_header("From", "PyCor <{}>".format(config.MAIL_FROM))
                     msg.replace_header("To", config.ADMIN_CONTACT)
                     msg.replace_header("Date", formatdate(localtime=True))
@@ -122,12 +124,10 @@ class Mail:
                         self.send(student_email, *Generator.invalid_attachment())
                         continue
 
+                    stripped_filename = possible_files[0].get_filename().lower().strip()
                     subject_corrector = None
                     for valid_filename, corr in valid_filenames.items():
-                        if (
-                            f"{valid_filename}.xlsx"
-                            == possible_files[0].get_filename().lower()
-                        ):
+                        if f"{valid_filename}.xlsx" == stripped_filename:
                             subject_corrector = corr
 
                     if not subject_corrector:
