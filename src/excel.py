@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import zipfile
 from pathlib import Path
 from typing import Optional
 
@@ -142,10 +143,14 @@ class Student(Commons):
             )
             self.valid = True
         except (TypeError, ValueError):
-            self.log.exception()
+            self.log.exception("Failed to read info from student file.")
             raise ExcelFileException("Failed to read information from student file.")
+        except zipfile.BadZipFile:
+            self.log.exception("Failed to open file, maybe it's password-protected?")
+            raise ExcelFileException("Password-protected file?")
         finally:
-            wb.close()
+            if wb:
+                wb.close()
 
     def get_stats(self, exercise: int, max_attempts: int) -> tuple:
         """
