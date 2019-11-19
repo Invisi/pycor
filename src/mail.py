@@ -90,7 +90,11 @@ class Mail:
                 )
 
                 # Forward mails to admin if subject contains "problem"
-                if "problem" in msg["Subject"].lower() and config.ADMIN_CONTACT:
+                if (
+                    msg["Subject"]
+                    and "problem" in msg["Subject"].lower()
+                    and config.ADMIN_CONTACT
+                ):
                     msg.replace_header(
                         "Subject", f"PyCor: {msg['Subject']} from {msg['From']}"
                     )
