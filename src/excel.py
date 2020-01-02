@@ -129,7 +129,7 @@ class Student(Commons):
             self.mat_num = int(ws.cell(10, 2).value or -1)
             self.dummies = [
                 _.value
-                for _ in [ws.cell(9, column) for column in range(1, 8)]  # A9 - G9
+                for _ in [ws.cell(9, column) for column in range(1, 9)]  # A9 - I9
             ]
 
             if self.mat_num < 0:
