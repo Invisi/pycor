@@ -129,7 +129,7 @@ class Student(Commons):
             self.mat_num = int(ws.cell(10, 2).value or -1)
             self.dummies = [
                 _.value
-                for _ in [ws.cell(9, column) for column in range(1, 9)]  # A9 - I9
+                for _ in [ws.cell(9, column) for column in range(2, 10)]  # B9 - I9
             ]
 
             if self.mat_num < 0:
@@ -399,7 +399,7 @@ class Corrector(Commons):
 
             # Copy values
             ws.Range("B10").Value = mat_num
-            ws.Range("B9:H9").Value = dummies
+            ws.Range("B9:I9").Value = dummies
 
             # Collect solutions
             solutions = []
