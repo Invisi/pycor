@@ -132,10 +132,10 @@ class Mail:
                         self.send(student_email, *Generator.invalid_attachment())
                         continue
 
-                    stripped_filename = possible_files[0].get_filename().lower().strip()
+                    stripped_filename = possible_files[0].get_filename().lower().replace(".xlsx", "").strip()
                     subject_corrector = None
                     for valid_filename, corr in valid_filenames.items():
-                        if f"{valid_filename}.xlsx" == stripped_filename:
+                        if valid_filename == stripped_filename:
                             subject_corrector = corr
 
                     if not subject_corrector:

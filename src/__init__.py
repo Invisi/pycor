@@ -14,7 +14,7 @@ import mail
 import post
 import utils
 
-__version__ = "2020-01-02"
+__version__ = "2020-02-26"
 
 
 def switch_tolerance(lower_tolerance, higher_tolerance):
