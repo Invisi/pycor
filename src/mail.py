@@ -312,12 +312,13 @@ class Generator:
     @staticmethod
     def invalid_attachment() -> tuple:
         return (
-            "Keine Excel-Datei im Anhang!",
+            "Keine/mehrere Excel-Datei im Anhang!",
             """
             <html>
                 <p>
                     Liebe(r) Studierende(r),<br><br>
-                    Sie haben <b>keine Excel-Datei eingereicht</b>. Das gültige Format ist .xlsx.<br>
+                    Sie haben <b>keine oder mehrere Excel-Datei eingereicht</b>. Das gültige Format ist .xlsx und 
+                    lediglich einzelne Dateien können akzeptiert werden.<br>
                     Sollten Sie Schwierigkeiten mit dem Einreichen Ihrer Lösungen haben, senden Sie bitte eine Email 
                     mit dem Betreff 'Problem'. Wir nehmen schnellstmöglich Kontakt mit Ihnen auf. Allgemeine Fragen 
                     zur Bearbeitung der Hausübung werden nicht beantwortet!
