@@ -7,6 +7,7 @@ from typing import Optional
 
 import numpy as np
 import openpyxl.worksheet.worksheet
+import openpyxl.reader.excel
 import pywintypes
 import typing
 import win32com.client
@@ -52,18 +53,12 @@ class Commons:
     def get_relevant_path(self):
         return os.sep.join(self.excel_file.parts[-3:])
 
-    def set_exercise_rows(
-        self,
-        ws: openpyxl.worksheet.worksheet.Worksheet or win32com.client.CDispatch,
-        get_cell: typing.Callable,
-        solutions: bool = False,
-    ):
+    def set_exercise_rows(self, get_cell: typing.Callable, is_student: bool = False):
         """
         Extract amount of exercises, their ranges, and (if needed) entered solutions
 
-        :param ws: :class:`openpyxl.worksheet.worksheet.Worksheet` instance to work on
         :param get_cell: Function to access the cells
-        :param solutions: Whether to grab the solutions or not
+        :param is_student: Whether to grab the solutions or not, only necessary in student files
         :return:
         """
 
@@ -73,7 +68,7 @@ class Commons:
         exercise_row_begin = []
         exercise_row_end = []
         self.exercise_ranges = []
-        if solutions:
+        if is_student:
             self.solutions = []
 
         while True:
@@ -93,7 +88,7 @@ class Commons:
                     exercise_row_end.append(index_num - 1)
                 exercise_row_begin.append(index_num)
 
-            if solutions:
+            if is_student:
                 # Collect submitted solutions
                 if len(self.solutions) <= current_exercise - 1:
                     self.solutions.append([])
@@ -101,6 +96,27 @@ class Commons:
                 self.solutions[current_exercise - 1].append(
                     get_cell(index_num, 3)
                 )  # C{index_sum}
+            else:
+                # Verify tolerances are set correctly
+                try:
+                    tolerance_rel = get_cell(index_num, 4)  # D{index}
+                    if tolerance_rel:
+                        _ = float(tolerance_rel)
+                except ValueError:
+                    utils.write_error(
+                        self.parent_path, f"Ungültige relative Toleranz in D{index_num}."
+                    )
+                    raise ExcelFileException("Invalid relative tolerance.")
+
+                try:
+                    tolerance_abs = get_cell(index_num, 5)  # E{index}
+                    if tolerance_abs:
+                        _ = float(tolerance_abs)
+                except ValueError:
+                    utils.write_error(
+                        self.parent_path, f"Ungültige absolute Toleranz in E{index_num}."
+                    )
+                    raise ExcelFileException("Invalid absolute tolerance.")
 
             previous_exercise = current_exercise
             index_num += +1
@@ -141,7 +157,7 @@ class Student(Commons):
                 raise ExcelFileException("Invalid mat_num")
 
             self.set_exercise_rows(
-                ws, solutions=True, get_cell=lambda r, c: ws.cell(r, c).value
+                is_student=True, get_cell=lambda r, c: ws.cell(r, c).value
             )
             self.valid = True
         except (TypeError, ValueError):
@@ -303,8 +319,7 @@ class Corrector(Commons):
                 ws = wb.Worksheets(1)
 
             def get_cell(row, column):
-                # noinspection PyProtectedMember
-                if isinstance(ws, openpyxl.worksheet._read_only.ReadOnlyWorksheet):
+                if isinstance(ws, openpyxl.reader.excel.ReadOnlyWorksheet):
                     return ws.cell(row, column).value
                 else:
                     return ws.Cells(row, column).Value
@@ -355,7 +370,7 @@ class Corrector(Commons):
                 raise ExcelFileException("Invalid number of max attempts.")
 
             # Grab exercise info
-            self.set_exercise_rows(ws, get_cell=get_cell)
+            self.set_exercise_rows(get_cell=get_cell)
 
             self.valid = True
         except (pywintypes.com_error, TypeError, ValueError):
