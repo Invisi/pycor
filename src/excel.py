@@ -80,7 +80,14 @@ class Commons:
                 break
 
             # Parse as int, convention
-            current_exercise = int(current_exercise)
+            try:
+                current_exercise = int(current_exercise)
+                if current_exercise <= 0:
+                    raise ValueError
+            except ValueError:
+                raise ExcelFileException(
+                    f"Failed to parse exercise number in A{index_num}"
+                )
 
             # We hit a new exercise
             if current_exercise > previous_exercise:
@@ -104,7 +111,8 @@ class Commons:
                         _ = float(tolerance_rel)
                 except ValueError:
                     utils.write_error(
-                        self.parent_path, f"Ungültige relative Toleranz in D{index_num}."
+                        self.parent_path,
+                        f"Ungültige relative Toleranz in D{index_num}.",
                     )
                     raise ExcelFileException("Invalid relative tolerance.")
 
@@ -114,7 +122,8 @@ class Commons:
                         _ = float(tolerance_abs)
                 except ValueError:
                     utils.write_error(
-                        self.parent_path, f"Ungültige absolute Toleranz in E{index_num}."
+                        self.parent_path,
+                        f"Ungültige absolute Toleranz in E{index_num}.",
                     )
                     raise ExcelFileException("Invalid absolute tolerance.")
 

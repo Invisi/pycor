@@ -362,8 +362,8 @@ class Generator:
                     Liebe(r) Studierende(r),<br><br>
                     Beim Verarbeiten Ihrer eingesendeten Datei sind Fehler aufgetreten. Möglicherweise ist sie defekt 
                     oder enthält nicht alle notwendingen Informationen wie beispielsweise die Matrikelnummer.
-                    Sollte dies mehrmals auftreten, nehmen Sie bitte Kontakt mit Ihrem Professor oder der 
-                    PyCor-Administration auf.
+                    Sollte dies mehrmals auftreten, nehmen Sie bitte Kontakt mit der PyCor-Administration 
+                    (bspw. per Mail mit "Problem" im Betreff an diese Adresse) oder mit Ihrem Professor auf.
                 </p>
                 <p>
                     Mit freundlichen Grüßen<br>

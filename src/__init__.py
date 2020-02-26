@@ -300,6 +300,11 @@ def main():
             # endregion
         except excel.ExcelFileException:
             log.exception("Error during processing of student file.")
+            student_mail = Path(os.path.abspath(sf["student"].parent)).name
+            mail_instance.send(
+                student_mail,
+                *mail.Generator.error_processing(sf["corrector"].corrector_title),
+            )
         except IOError:
             log.exception("Critical error during processing. Quitting.")
             raise
