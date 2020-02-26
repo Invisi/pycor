@@ -182,6 +182,7 @@ def main():
             for idx, student_solution in enumerate(e.solutions):
                 # Ignore exercise if one of the fields is empty
                 if None in student_solution:
+                    log.debug("Ignoring exercise %s due to empty field", idx + 1)
                     continue
 
                 # region First block/pass check for exercise

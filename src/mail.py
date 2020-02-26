@@ -35,6 +35,11 @@ class Mail:
         self.smtp = None
 
         # Login
+        self.imap_login()
+
+        self.log.info("%s - Successfully logged in", self.username)
+
+    def imap_login(self):
         try:
             self.imap = imaplib.IMAP4_SSL(config.MAIL_IMAP)
             self.imap.login(self.username, self.password)
@@ -42,8 +47,6 @@ class Mail:
         except (imaplib.IMAP4.error, ConnectionError):
             self.log.exception("Failed to login to IMAP server.")
             raise LoginException
-
-        self.log.info("%s - Successfully logged in", self.username)
 
     def smtp_login(self):
         try:
@@ -54,6 +57,7 @@ class Mail:
         except smtplib.SMTPException:
             self.log.exception("Failed to login to SMTP server.")
             raise LoginException
+
 
     def smtp_logout(self):
         if self.smtp:
@@ -240,12 +244,23 @@ class Mail:
             self.log.info("Sent mail to %s", recipient)
 
             # Save mail to Sent
-            self.imap.append(
-                "Sent",
-                "\\Seen",
-                imaplib.Time2Internaldate(time.time()),
-                str(msg).encode("utf-8"),
-            )
+            try:
+                self.imap.append(
+                    "Sent",
+                    "\\Seen",
+                    imaplib.Time2Internaldate(time.time()),
+                    str(msg).encode("utf-8"),
+                )
+            except imaplib.IMAP4.abort:
+                # Retry saving the mail
+                self.imap_login()
+                self.imap.append(
+                    "Sent",
+                    "\\Seen",
+                    imaplib.Time2Internaldate(time.time()),
+                    str(msg).encode("utf-8"),
+                )
+
         except LoginException:
             self.log.error("Failed to send mail to %s", recipient)
             raise
