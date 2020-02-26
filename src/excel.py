@@ -85,9 +85,7 @@ class Commons:
                 if current_exercise <= 0:
                     raise ValueError
             except ValueError:
-                raise ExcelFileException(
-                    f"Failed to parse exercise number in A{index_num}"
-                )
+                raise ExcelFileException("Failed to parse exercise number")
 
             # We hit a new exercise
             if current_exercise > previous_exercise:
