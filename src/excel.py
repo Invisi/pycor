@@ -23,8 +23,6 @@ class ExcelFileException(Exception):
 
 def setup_excel():
     excel = win32com.client.Dispatch("Excel.Application")
-    if config.SHOW_EXCEL:
-        excel.Visible = True
 
     # "Do you want to save your work?"
     excel.DisplayAlerts = False
@@ -32,6 +30,10 @@ def setup_excel():
     excel.AskToUpdateLinks = False
     # Speed up macro access
     excel.ScreenUpdating = False
+
+    if config.SHOW_EXCEL:
+        excel.Visible = True
+        excel.ScreenUpdating = True
 
     return excel
 
