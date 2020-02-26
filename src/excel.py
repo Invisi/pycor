@@ -103,29 +103,6 @@ class Commons:
                 self.solutions[current_exercise - 1].append(
                     get_cell(index_num, 3)
                 )  # C{index_sum}
-            else:
-                # Verify tolerances are set correctly
-                try:
-                    tolerance_rel = get_cell(index_num, 4)  # D{index}
-                    if tolerance_rel:
-                        _ = float(tolerance_rel)
-                except ValueError:
-                    utils.write_error(
-                        self.parent_path,
-                        f"Ungültige relative Toleranz in D{index_num}.",
-                    )
-                    raise ExcelFileException("Invalid relative tolerance.")
-
-                try:
-                    tolerance_abs = get_cell(index_num, 5)  # E{index}
-                    if tolerance_abs:
-                        _ = float(tolerance_abs)
-                except ValueError:
-                    utils.write_error(
-                        self.parent_path,
-                        f"Ungültige absolute Toleranz in E{index_num}.",
-                    )
-                    raise ExcelFileException("Invalid absolute tolerance.")
 
             previous_exercise = current_exercise
             index_num += +1
