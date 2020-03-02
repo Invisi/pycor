@@ -1,5 +1,6 @@
 import datetime
-import email
+import email.errors
+import email.header
 import email.mime.multipart
 import email.mime.text
 import imaplib
@@ -7,11 +8,9 @@ import logging
 import os
 import smtplib
 import time
+import typing
 from email.utils import formatdate
 from pathlib import Path
-from typing import Optional, List
-
-import typing
 
 import excel
 import utils
@@ -58,7 +57,6 @@ class Mail:
             self.log.exception("Failed to login to SMTP server.")
             raise LoginException
 
-
     def smtp_logout(self):
         if self.smtp:
             try:
@@ -67,7 +65,7 @@ class Mail:
                 # Ignore disconnect, that's kinda what we want to do anyway
                 pass
 
-    def check_inbox(self, valid_filenames: dict) -> Optional[List[dict]]:
+    def check_inbox(self, valid_filenames: dict) -> typing.Optional[typing.List[dict]]:
         ret, message_str = self.imap.search(None, "(UNSEEN)")
 
         if ret == "OK":
@@ -120,19 +118,43 @@ class Mail:
                     # Ignore mailer-daemon, no-reply, or own account
                     continue
                 elif student_email.endswith("fh-aachen.de"):
-                    # Find files
-                    possible_files = [
-                        _
-                        for _ in msg.get_payload()
-                        if not isinstance(_, str) and _.get_content_type() == EXCEL_MIME
-                    ]
+                    # Find files and filter out non-xlsx
+                    def _filter(_: email.message.Message) -> bool:
+                        # Throw out strings
+                        if isinstance(_, str):
+                            return False
+
+                        # Non-excel files
+                        if (
+                            _.get_content_type() != EXCEL_MIME
+                            and _.get_content_type() != "application/octet-stream"
+                        ):
+                            # Outlook for iOS (e.g.) will attach the file as octet-stream
+                            return False
+
+                        try:
+                            file_name = _.get_filename().lower()
+                            return file_name.endswith(".xlsx")
+                        except AttributeError:
+                            return False
+
+                    possible_files = list(filter(_filter, msg.get_payload()))
+
                     if len(possible_files) != 1:
                         # No file, multiple files or invalid file. Notify student
-                        self.log.warn("Student submitted multiple files.")
+                        self.log.warning(
+                            "Student submitted %s files.", len(possible_files)
+                        )
                         self.send(student_email, *Generator.invalid_attachment())
                         continue
 
-                    stripped_filename = possible_files[0].get_filename().lower().replace(".xlsx", "").strip()
+                    stripped_filename = (
+                        possible_files[0]
+                        .get_filename()
+                        .lower()
+                        .replace(".xlsx", "")
+                        .strip()
+                    )
                     subject_corrector = None
                     for valid_filename, corr in valid_filenames.items():
                         if valid_filename == stripped_filename:
@@ -140,7 +162,7 @@ class Mail:
 
                     if not subject_corrector:
                         # Unknown subject. Notify student
-                        self.log.warn("Student submitted unknown subject.")
+                        self.log.warning("Student submitted unknown subject.")
 
                         filename = possible_files[0].get_filename()
                         if "=?" in filename:
@@ -175,7 +197,7 @@ class Mail:
 
     def download_attachment(
         self, _file: email.message.Message, student_email: str, subject: excel.Corrector
-    ) -> Optional[Path]:
+    ) -> typing.Optional[Path]:
         """
         Downloads attachment and returns the full path to it.
         If there are multiple or no attachments None is returned.
@@ -376,7 +398,7 @@ class Generator:
 
     @staticmethod
     def exercise_passed(
-        corrector_title: str, exercises: List[int], mat_num: int
+        corrector_title: str, exercises: typing.List[int], mat_num: int
     ) -> tuple:
         exercise_no = str([x + 1 for x in exercises])
         return (
@@ -399,7 +421,7 @@ class Generator:
 
     @staticmethod
     def exercise_blocked(
-        corrector_title: str, exercises: List[int], max_tries: int
+        corrector_title: str, exercises: typing.List[int], max_tries: int
     ) -> tuple:
         exercise_no = str([x + 1 for x in exercises])
         return (
