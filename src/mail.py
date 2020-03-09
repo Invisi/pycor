@@ -364,7 +364,7 @@ class Generator:
                     Sie haben eine Excel-Datei eingereicht, die keinem Modul zuzuordnen war. Möglicherweise wurde die 
                     Datei beim Herunterladen umbenannt. Bitte vergleichen Sie den Namen der eingeschickten Datei 
                     ({submitted_name}) mit Ihren Aufgabenblatt/der Datei auf Ilias.
-                    Sollte der Fehler nicht ersichtlich sein, melden Sie sich bitte bei Ihren Professor oder der 
+                    Sollte der Fehler nicht ersichtlich sein, melden Sie sich bitte bei Ihrem/-r Professor/-in oder der 
                     PyCor-Administration.
                 </p>
                 <p>
@@ -386,7 +386,7 @@ class Generator:
                     Beim Verarbeiten Ihrer eingesendeten Datei sind Fehler aufgetreten. Möglicherweise ist sie defekt 
                     oder enthält nicht alle notwendingen Informationen wie beispielsweise die Matrikelnummer.
                     Sollte dies mehrmals auftreten, nehmen Sie bitte Kontakt mit der PyCor-Administration 
-                    (bspw. per Mail mit "Problem" im Betreff an diese Adresse) oder mit Ihrem Professor auf.
+                    (bspw. per Mail mit "Problem" im Betreff an diese Adresse) oder mit Ihrem/-r Professor/-in auf.
                 </p>
                 <p>
                     Mit freundlichen Grüßen<br>
@@ -432,7 +432,7 @@ class Generator:
                     Liebe(r) Studierende(r),<br><br>
                     Sie haben <b>{max_tries} fehlerhafte Lösungen zu Aufgabe(n) {exercise_no} eingereicht</b> und 
                     wurden daher <b>vorübergehend gesperrt</b>. Weitere Lösungsversuche werden nur <b>nach 
-                    persönlicher(!) Rücksprache</b> mit Ihrem Professor/den zuständigen HiWis zugelassen.
+                    persönlicher(!) Rücksprache</b> mit Ihrem/-r Professor/-in oder den zuständigen HiWis zugelassen.
                 </p>
                 <p>
                     Mit freundlichen Grüßen<br>
@@ -478,3 +478,27 @@ class Generator:
                 <table><tr><th>Variable</th><th>Korrektur</th></tr>{ret}</table>
                 <hr/>
                 """
+
+    @staticmethod
+    def exercise_ignored(
+        corrector_title: str, ignored: typing.List[int]
+    ) -> typing.Tuple[str, str]:
+        return (
+            "Problem: Fehler bei der Auswertung",
+            f"""
+            <html>
+                <p>
+                    Liebe(r) Studierende(r),<br><br>
+                    bei der Verarbeitung von {'Aufgaben' if len(ignored) > 1 else 'Aufgabe'} 
+                    {', '.join([str(_) for _ in ignored])} ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass
+                    die Nummerierung der Aufgaben nicht verändert wurde.<br>
+                    Sollte der Fehler nicht zu finden sein, antworten Sie bitte auf diese Mail oder wenden Sie sich an 
+                    Ihre/-n Professor/-in.
+                </p>
+                <p>
+                    Mit freundlichen Grüßen<br>
+                    <b>{corrector_title}</b> und PyCor
+                </p>
+            </html>
+            """,
+        )

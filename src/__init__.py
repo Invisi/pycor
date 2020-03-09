@@ -179,6 +179,7 @@ def main():
             # List of passed/blocked exercises
             exercises_blocked = []
             exercises_passed = []
+            exercises_ignored = []
             for idx, student_solution in enumerate(e.solutions):
                 # Ignore exercise if one of the fields is empty
                 if None in student_solution:
@@ -213,6 +214,7 @@ def main():
                 corrector_solution = real_solutions[idx]
                 # Make sure the student didn't somehow delete any exercise part
                 if len(student_solution) != len(corrector_solution):
+                    exercises_ignored.append(idx + 1)
                     log.warning(
                         "%s may have tampered with the excel file, got different amount of sub "
                         "exercises for exercise %s",
@@ -298,6 +300,15 @@ def main():
                 )
                 log.debug("Sending final congrats")
             # endregion
+
+            if len(exercises_ignored) > 0:
+                mail_instance.send(
+                    e.student_email,
+                    *mail.Generator.exercise_ignored(
+                        corrector.corrector_title, exercises_ignored
+                    ),
+                )
+                log.debug("Sent ignored exercises")
         except excel.ExcelFileException:
             log.exception("Error during processing of student file.")
             student_mail = Path(os.path.abspath(sf["student"].parent)).name
