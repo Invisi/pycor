@@ -1,8 +1,0 @@
-cryptography~=2.6.1
-defusedxml~=0.5.0
-matplotlib~=3.0.3
-numpy~=1.16.2
-openpyxl
-pywin32
-ipaddress
-sentry-sdk
