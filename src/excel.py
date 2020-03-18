@@ -12,9 +12,8 @@ import pywintypes  # type: ignore
 import win32com.client  # type: ignore
 from cryptography import fernet
 
+import config  # type: ignore
 import utils  # type: ignore
-
-config = utils.import_config()
 
 
 class ExcelFileException(Exception):
@@ -407,8 +406,7 @@ class Corrector(Commons):
 
             # Collect solutions
             solutions: typing.List[typing.List[dict]] = []
-            for idx, exercise in enumerate(self.exercise_ranges):
-                # type: (int, typing.List[int])
+            for idx, exercise in enumerate(self.exercise_ranges):  # type: (int, typing.List[int])
                 if len(solutions) <= idx:
                     solutions.append([])
 

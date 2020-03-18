@@ -5,9 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 
-import utils  # type: ignore
-
-config = utils.import_config()
+import config  # type: ignore
 
 
 class PostProcessing:

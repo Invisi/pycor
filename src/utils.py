@@ -10,6 +10,8 @@ from pathlib import Path
 
 import sentry_sdk  # type: ignore
 
+import config  # type: ignore
+
 
 def setup_logger(level=logging.DEBUG):
     # Create logs folder
@@ -79,35 +81,7 @@ def write_error(subject_folder: Path, message: str):
     )
 
 
-def import_config():
-    # Import config in exe created by PyInstaller
-    if getattr(sys, "frozen", False):
-        import importlib.util
-
-        config_file = Path(sys.executable).parent / "config.py"
-        if not config_file.exists():
-            if not (Path(sys.executable).parent / "config.example.py").exists():
-                from shutil import copyfile
-
-                copyfile(
-                    Path(sys._MEIPASS) / "config.example.py",
-                    Path(sys.executable).parent / "config.example.py",
-                )
-
-            print("config.py is missing! An example config was created.")
-            input("Press return to exit.")
-            sys.exit(1)
-
-        spec = importlib.util.spec_from_file_location("config", config_file)
-        config = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(config)
-    else:
-        import config  # type: ignore
-    return config
-
-
 def setup_sentry(release):
-    config = import_config()
     if config.DISABLE_OUTGOING_MAIL:
         environment = "dev"
     else:

@@ -14,8 +14,8 @@ from pathlib import Path
 
 import excel  # type: ignore
 import utils  # type: ignore
+import config  # type: ignore
 
-config = utils.import_config()
 EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 

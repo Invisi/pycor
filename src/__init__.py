@@ -10,6 +10,7 @@ from sys import exit
 
 from cryptography.fernet import Fernet
 
+import config  # type: ignore
 import excel  # type: ignore
 import mail  # type: ignore
 import post  # type: ignore
@@ -329,7 +330,6 @@ def main():
 
 if __name__ == "__main__":
     # Import config
-    config = utils.import_config()
     log = utils.setup_logger(logging.DEBUG if config.DEBUG else logging.INFO)
 
     # Ignore warnings if not in debug mode
