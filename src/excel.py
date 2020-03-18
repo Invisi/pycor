@@ -1,19 +1,18 @@
 import datetime
 import logging
 import os
+import typing
 import zipfile
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
-import openpyxl.worksheet.worksheet
-import openpyxl.reader.excel
-import pywintypes
-import typing
-import win32com.client
+import numpy as np  # type: ignore
+import openpyxl.reader.excel  # type: ignore
+import openpyxl.worksheet.worksheet  # type: ignore
+import pywintypes  # type: ignore
+import win32com.client  # type: ignore
 from cryptography import fernet
 
-import utils
+import utils  # type: ignore
 
 config = utils.import_config()
 
@@ -47,8 +46,8 @@ class Commons:
         self.log = logging.getLogger("PyCor").getChild("Excel")
         self.log.info("Opening %s", self.get_relevant_path())
 
-        self.exercise_ranges = None
-        self.solutions = None
+        self.exercise_ranges: typing.List[typing.List[int]] = []
+        self.solutions: typing.List[typing.List[int]] = []
 
     def get_relevant_path(self):
         return os.sep.join(self.excel_file.parts[-3:])
@@ -154,7 +153,7 @@ class Student(Commons):
             if wb:
                 wb.close()
 
-    def get_stats(self, exercise: int, max_attempts: int) -> tuple:
+    def get_stats(self, exercise: int, max_attempts: int) -> typing.Tuple[bool, bool]:
         """
         Returns the student's statistics
 
@@ -200,7 +199,7 @@ class Student(Commons):
 
     def update_stats(
         self, exercise: int, correct_percentage: int, max_attempts: int
-    ) -> tuple:
+    ) -> typing.Tuple[bool, bool]:
         """
         Updates and saves the student's statistics
 
@@ -265,7 +264,7 @@ class Student(Commons):
 
 
 class Corrector(Commons):
-    def __init__(self, excel_file: Path, simple_validation=True):
+    def __init__(self, excel_file: Path, simple_validation: bool = True):
         super().__init__(excel_file)
         self.password = self.find_password()
 
@@ -274,7 +273,7 @@ class Corrector(Commons):
             self.valid = False
             return
 
-        wb = None
+        wb: typing.Union[openpyxl.workbook.Workbook, typing.Any] = None
         excel = None
         try:
             # Whether the file is considered valid
@@ -337,14 +336,16 @@ class Corrector(Commons):
                 utils.write_error(self.parent_path, "Ungültige Frist.")
                 raise ExcelFileException("Invalid deadline.")
 
-            self.deadline = self.deadline.date()
+            deadline_date = self.deadline.date()
 
-            if (self.deadline - datetime.date.today()).days < 0:
+            if (deadline_date - datetime.date.today()).days < 0:
                 self.log.info(
                     "Ignoring %s due to deadline (%s)",
                     self.get_relevant_path(),
-                    self.deadline,
+                    deadline_date,
                 )
+                utils.write_ignore(self.parent_path, "Abgabefrist ist abgelaufen.")
+                # TODO: Accept file but remind students that the submission is past deadline
                 return
 
             # Get max amount of attempts
@@ -371,22 +372,24 @@ class Corrector(Commons):
             # Close WorkBook and Excel
             if excel:
                 if wb:
+                    # noinspection PyUnresolvedReferences
                     wb.Close(SaveChanges=False)
                 excel.Application.Quit()
                 del excel
             else:
-                if wb and isinstance(wb, openpyxl.worksheet.worksheet.Worksheet):
+                if wb and isinstance(wb, openpyxl.workbook.Workbook):
                     wb.close()
 
-    def generate_solutions(self, mat_num: int, dummies: []) -> Optional[list]:
+    def generate_solutions(
+        self, mat_num: int, dummies: typing.List[typing.Any]
+    ) -> typing.Optional[list]:
         """
         Generates mat_num- and dummy-specific solutions and returns them in a two-dimensional list
         with the first dimension being the exercise and the second one containing
         the solution's name, value, and tolerance.
 
         :param mat_num: Student's matriculation number
-        :param dummies: List of dummy values (a1-a7)
-        :return:
+        :param dummies: List of dummy values (a1-a8)
         """
         wb = None
         excel = None
@@ -403,8 +406,9 @@ class Corrector(Commons):
             ws.Range("B9:I9").Value = dummies
 
             # Collect solutions
-            solutions = []
+            solutions: typing.List[typing.List[dict]] = []
             for idx, exercise in enumerate(self.exercise_ranges):
+                # type: (int, typing.List[int])
                 if len(solutions) <= idx:
                     solutions.append([])
 
@@ -436,7 +440,6 @@ class Corrector(Commons):
     def convert_to_xlsx(self):
         """
         Convert current Excel file to .xlsx for openpyxl
-        :return:
         """
         if self.excel_file.with_suffix(".xlsx").exists():
             self.log.warning(".xlsx already exists")
@@ -446,7 +449,6 @@ class Corrector(Commons):
             return
 
         excel = None
-        wb = None
         try:
             excel = setup_excel()
             wb = excel.Workbooks.Open(self.excel_file, 0, False, None, self.password)
@@ -471,7 +473,7 @@ class Corrector(Commons):
                 del excel
 
     @staticmethod
-    def from_path(subject_folder: Path):
+    def from_path(subject_folder: Path) -> typing.Optional["Corrector"]:
         """
         Searches for `corrector.xls[mx]?` in given path and returns :class:`Corrector` if found
 
@@ -482,7 +484,7 @@ class Corrector(Commons):
         # Ignore folders containing the ignore file
         ignore_file = subject_folder / "PYCOR_IGNORE.txt"
         if ignore_file.exists():
-            return
+            return None
         for item in subject_folder.iterdir():
             if (
                 item.is_file()
@@ -491,7 +493,9 @@ class Corrector(Commons):
             ):
                 return Corrector(item)
 
-    def find_password(self) -> Optional[str]:
+        return None
+
+    def find_password(self) -> typing.Optional[str]:
         # Look for psw file
         try:
             psw_file = self.parent_path / "psw"

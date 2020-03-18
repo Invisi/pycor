@@ -2,10 +2,10 @@ import csv
 import logging
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import numpy as np
+import matplotlib.pyplot as plt  # type: ignore
+import numpy as np  # type: ignore
 
-import utils
+import utils  # type: ignore
 
 config = utils.import_config()
 

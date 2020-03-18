@@ -12,8 +12,8 @@ import typing
 from email.utils import formatdate
 from pathlib import Path
 
-import excel
-import utils
+import excel  # type: ignore
+import utils  # type: ignore
 
 config = utils.import_config()
 EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -65,11 +65,13 @@ class Mail:
                 # Ignore disconnect, that's kinda what we want to do anyway
                 pass
 
-    def check_inbox(self, valid_filenames: dict) -> typing.Optional[typing.List[dict]]:
+    def check_inbox(
+        self, valid_filenames: typing.Dict[str, excel.Corrector]
+    ) -> typing.Optional[typing.List[typing.Dict]]:
         ret, message_str = self.imap.search(None, "(UNSEEN)")
+        corr_files = []
 
         if ret == "OK":
-            corr_files = []
             message_ids = message_str[0].split()
             for message_id in message_ids:
                 # In theory this could fail IF someone deletes the message before it is fetched.
@@ -170,7 +172,12 @@ class Mail:
                                 header = email.header.decode_header(filename)
                                 if len(header) > 0:
                                     content, encoding = header[0]
-                                    filename = content.decode(encoding)
+                                    if encoding:
+                                        filename = content.decode(encoding)
+                                    else:
+                                        self.log.warning(
+                                            "Failed to determine encoding for filename"
+                                        )
                             except email.errors.HeaderParseError:
                                 self.log.error("Failed to parse header for filename")
 
@@ -193,7 +200,8 @@ class Mail:
                     # Notify sender about wrong email address
                     self.log.debug("Wrong address")
                     self.send(student_email, *Generator.wrong_address())
-            return corr_files
+
+        return corr_files
 
     def download_attachment(
         self, _file: email.message.Message, student_email: str, subject: excel.Corrector
@@ -215,7 +223,7 @@ class Mail:
             user_dir.mkdir(exist_ok=True)
         except OSError:
             self.log.exception("Failed to create user folder.")
-            return
+            return None
 
         # Save file in proper folder
         basename, extension = os.path.splitext(_file.get_filename())
@@ -290,7 +298,7 @@ class Mail:
 
 class Generator:
     @staticmethod
-    def wrong_address() -> tuple:
+    def wrong_address() -> typing.Tuple[str, str]:
         return (
             "Falscher Account!",
             f"""
@@ -310,7 +318,7 @@ class Generator:
         )
 
     @staticmethod
-    def malformed_attachment() -> tuple:
+    def malformed_attachment() -> typing.Tuple[str, str]:
         return (
             "Ungültige Excel-Datei im Anhang!",
             """
@@ -332,7 +340,7 @@ class Generator:
         )
 
     @staticmethod
-    def invalid_attachment() -> tuple:
+    def invalid_attachment() -> typing.Tuple[str, str]:
         return (
             "Keine/mehrere Excel-Datei im Anhang!",
             """
@@ -354,7 +362,7 @@ class Generator:
         )
 
     @staticmethod
-    def unknown_attachment(submitted_name: str) -> tuple:
+    def unknown_attachment(submitted_name: str) -> typing.Tuple[str, str]:
         return (
             "Unbekanntes Modul.",
             f"""
@@ -376,7 +384,7 @@ class Generator:
         )
 
     @staticmethod
-    def error_processing(corrector_title: str) -> tuple:
+    def error_processing(corrector_title: str) -> typing.Tuple[str, str]:
         return (
             "Fehler bei der Verarbeitung!",
             f"""
@@ -399,7 +407,7 @@ class Generator:
     @staticmethod
     def exercise_passed(
         corrector_title: str, exercises: typing.List[int], mat_num: int
-    ) -> tuple:
+    ) -> typing.Tuple[str, str]:
         exercise_no = str([x + 1 for x in exercises])
         return (
             f"Teil(e) erfolgreich gelöst!  Mat. Num.: {mat_num}",
@@ -422,7 +430,7 @@ class Generator:
     @staticmethod
     def exercise_blocked(
         corrector_title: str, exercises: typing.List[int], max_tries: int
-    ) -> tuple:
+    ) -> typing.Tuple[str, str]:
         exercise_no = str([x + 1 for x in exercises])
         return (
             f"Sie wurden gesperrt!",
@@ -443,7 +451,7 @@ class Generator:
         )
 
     @staticmethod
-    def exercise_congrats(corrector_title: str, mat_num: int) -> tuple:
+    def exercise_congrats(corrector_title: str, mat_num: int) -> typing.Tuple[str, str]:
         return (
             f"Hausübung vollständig gelöst! Mat. Num.: {mat_num}",
             f"""

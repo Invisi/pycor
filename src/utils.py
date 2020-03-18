@@ -8,7 +8,7 @@ import sys
 import traceback
 from pathlib import Path
 
-import sentry_sdk
+import sentry_sdk  # type: ignore
 
 
 def setup_logger(level=logging.DEBUG):
@@ -46,6 +46,11 @@ def setup_logger(level=logging.DEBUG):
     return log
 
 
+def write_ignore(subject_folder: Path, message: str):
+    with (subject_folder / "PYCOR_IGNORE.txt").open("a") as e:
+        e.write(message)
+
+
 def write_error(subject_folder: Path, message: str):
     """
     Writes specified error message to PYCOR_ERROR.txt in {subject_folder}.
@@ -66,12 +71,12 @@ def write_error(subject_folder: Path, message: str):
         e.write("{} - {}\n".format(dt, message))
 
     # Ignore folder after this
-    with (subject_folder / "PYCOR_IGNORE.txt").open("a") as e:
-        e.write(
-            "{} - Löschen Sie diese Datei, sobald der Fehler in PYCOR_ERROR.txt behoben wurde.\n".format(
-                dt
-            )
-        )
+    write_ignore(
+        subject_folder,
+        "{} - Löschen Sie diese Datei, sobald der Fehler in PYCOR_ERROR.txt behoben wurde.\n".format(
+            dt
+        ),
+    )
 
 
 def import_config():
@@ -97,7 +102,7 @@ def import_config():
         config = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(config)
     else:
-        import config
+        import config  # type: ignore
     return config
 
 

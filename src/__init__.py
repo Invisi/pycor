@@ -4,20 +4,21 @@ import getpass
 import logging
 import os
 import time
+import typing
 from pathlib import Path
 from sys import exit
 
 from cryptography.fernet import Fernet
 
-import excel
-import mail
-import post
-import utils
+import excel  # type: ignore
+import mail  # type: ignore
+import post  # type: ignore
+import utils  # type: ignore
 
 __version__ = "2020-02-26"
 
 
-def switch_tolerance(lower_tolerance, higher_tolerance):
+def switch_tolerance(lower_tolerance: float, higher_tolerance: float):
     if lower_tolerance > higher_tolerance:
         t = higher_tolerance
         higher_tolerance = lower_tolerance
@@ -27,10 +28,10 @@ def switch_tolerance(lower_tolerance, higher_tolerance):
 
 
 def compare(
-    attempt: float or str,
-    solution: float or str,
-    tolerance_rel: int or float or None,
-    tolerance_abs: int or float or None,
+    attempt: typing.Union[float, str],
+    solution: typing.Union[float, str],
+    tolerance_rel: typing.Optional[typing.Union[int, float]],
+    tolerance_abs: typing.Optional[typing.Union[int, float]],
 ):
     """
     Compares student's attempt to solution and returns True if the attempt is within either tolerance margin
@@ -48,7 +49,7 @@ def compare(
 
         # Compare string values
         if isinstance(solution, str):
-            return solution.lower().strip() == attempt.lower().strip()
+            return solution.lower().strip() == str(attempt).lower().strip()
 
         # Solution was empty
         if solution is None:
@@ -93,15 +94,13 @@ def compare(
     return False
 
 
-def find_valid_filenames():
+def find_valid_filenames() -> typing.Dict[str, excel.Corrector]:
     """
     Searches for corrector files in configured folders. Returns dictionary containing codename as key
     and :class:`excel.Corrector` as value.
-
-    :return: Dict[str, excel.Corrector]
     """
     # Reset dict
-    valid_filenames = {}
+    valid_filenames: typing.Dict[str, excel.Corrector] = {}
 
     # Find configured groups
     for group in config.FOLDERS:
