@@ -6,14 +6,14 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-cryptography = "~=2.6.1"
-defusedxml = "~=0.5.0"
-matplotlib = "~=3.0.3"
-numpy = "~=1.16.2"
+cryptography = "~=2.8"
+defusedxml = "~=0.6.0"
+matplotlib = "~=3.2.1"
+numpy = "~=1.18.2"
 openpyxl = "~=3.0.3"
 pywin32 = "==227"
 sentry-sdk = "~=0.14.2"
-
+pydantic = "~=1.4"
 
 [requires]
 python_version = "3.7"
