@@ -17,9 +17,10 @@ dist/
 env/
 venv/
 
-test/
+test_folder/
 src/config.py
 logs/
+state.json
 
 # Excel
 ~$*

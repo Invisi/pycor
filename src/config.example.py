@@ -3,8 +3,8 @@ DEBUG = False
 
 # Sets folders containing subjects over which will be iterated
 FOLDERS = [
-    'test\\folder 1',
-    'test\\folder 2'
+    'test_folder\\folder 1',
+    'test_folder\\folder 2'
 ]
 
 # Username
