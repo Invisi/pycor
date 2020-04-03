@@ -16,7 +16,7 @@ import mail  # type: ignore
 import post  # type: ignore
 import utils  # type: ignore
 
-__version__ = "2020-02-26"
+__version__ = "2020-04-03"
 
 
 def switch_tolerance(lower_tolerance: float, higher_tolerance: float):

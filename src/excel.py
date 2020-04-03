@@ -14,10 +14,15 @@ from cryptography import fernet
 
 import config  # type: ignore
 import utils  # type: ignore
+from state import State, CorrectorDict
 
 
 class ExcelFileException(Exception):
     pass
+
+
+# Create global state object
+STATE = State.load()
 
 
 def setup_excel():
@@ -48,8 +53,8 @@ class Commons:
         self.exercise_ranges: typing.List[typing.List[int]] = []
         self.solutions: typing.List[typing.List[int]] = []
 
-    def get_relevant_path(self):
-        return os.sep.join(self.excel_file.parts[-3:])
+    def get_relevant_path(self, separator: str = os.sep):
+        return separator.join(self.excel_file.parts[-3:])
 
     def set_exercise_rows(self, get_cell: typing.Callable, is_student: bool = False):
         """
@@ -99,7 +104,29 @@ class Commons:
                 self.solutions[current_exercise - 1].append(
                     get_cell(index_num, 3)
                 )  # C{index_sum}
+            else:
+                # Verify tolerances are set correctly
+                try:
+                    tolerance_rel = get_cell(index_num, 4)  # D{index}
+                    if tolerance_rel:
+                        _ = float(tolerance_rel)
+                except ValueError:
+                    utils.write_error(
+                        self.parent_path,
+                        f"Ungültige relative Toleranz in Feld D{index_num}.",
+                    )
+                    raise ExcelFileException("Invalid relative tolerance.")
 
+                try:
+                    tolerance_abs = get_cell(index_num, 5)  # E{index}
+                    if tolerance_abs:
+                        _ = float(tolerance_abs)
+                except ValueError:
+                    utils.write_error(
+                        self.parent_path,
+                        f"Ungültige absolute Toleranz in Feld E{index_num}.",
+                    )
+                    raise ExcelFileException("Invalid absolute tolerance.")
             previous_exercise = current_exercise
             index_num += +1
 
@@ -263,7 +290,7 @@ class Student(Commons):
 
 
 class Corrector(Commons):
-    def __init__(self, excel_file: Path, simple_validation: bool = True):
+    def __init__(self, excel_file: Path):
         super().__init__(excel_file)
         self.password = self.find_password()
 
@@ -272,65 +299,86 @@ class Corrector(Commons):
             self.valid = False
             return
 
+        # openpyxl only handles xlsx/xlsm
+        if self.password == "" and self.excel_file.suffix == ".xls":
+            self.log.warning("Found .xls file, trying to convert.")
+            self.convert_to_xlsx()
+            return
+
         wb: typing.Union[openpyxl.workbook.Workbook, typing.Any] = None
         excel = None
         try:
             # Whether the file is considered valid
             self.valid = False
 
-            if simple_validation and self.password == "":
-                if self.excel_file.suffix == ".xls":  # openpyxl only handles xlsx/xlsm
-                    self.log.warning("Found .xls file, trying to convert.")
-                    self.convert_to_xlsx()
-                    return
-                else:
+            # Load state if possible
+            state = STATE.correctors.get(self.get_relevant_path("_"), None)
+            change_date = datetime.datetime.utcfromtimestamp(
+                self.excel_file.stat().st_mtime
+            )
+
+            # File was not changed since last check, skip verification
+            if state and change_date == state.change_date:
+                # Use saved info
+                self.codename = state.codename
+                self.deadline = state.deadline
+                self.max_attempts = state.max_attempts
+                self.password = state.password
+                self.corrector_title = state.title
+                self.exercise_ranges = state.exercise_ranges
+            else:
+                if self.password == "":
                     wb = openpyxl.load_workbook(
                         self.excel_file, read_only=True, data_only=True
                     )
                     ws = wb.worksheets[0]
-            else:
-                self.log.debug("File requires a password, can't open without Excel")
-                """
-                   Open workbook in Excel. It has to be Excel because workbook-wide encryption creates a weird FAT-like 
-                   compound archive that can't be read with any (currently) existing library.
-                """
-                excel = setup_excel()
-                wb = excel.Workbooks.Open(
-                    self.excel_file, 0, False, None, self.password
-                )
-                ws = wb.Worksheets(1)
-
-            def get_cell(row, column):
-                if isinstance(ws, openpyxl.reader.excel.ReadOnlyWorksheet):
-                    return ws.cell(row, column).value
                 else:
-                    return ws.Cells(row, column).Value
+                    self.log.debug("File requires a password, can't open without Excel")
+                    """
+                       Open workbook in Excel. It has to be Excel because workbook-wide encryption creates a weird FAT-like 
+                       compound archive that can't be read with any (currently) existing library.
+                    """
+                    excel = setup_excel()
+                    wb = excel.Workbooks.Open(
+                        self.excel_file, 0, False, None, self.password
+                    )
+                    ws = wb.Worksheets(1)
 
-            # Extract subject
-            self.corrector_title = get_cell(1, 2)  # B1
-            if not self.corrector_title:
-                utils.write_error(self.parent_path, "Ungültiger Name im Titel.")
-                raise ExcelFileException(
-                    "Empty title field. Please specify a valid name."
-                )
+                def get_cell(row, column):
+                    if isinstance(ws, openpyxl.reader.excel.ReadOnlyWorksheet):
+                        return ws.cell(row, column).value
+                    else:
+                        return ws.Cells(row, column).Value
 
-            # Name that should be matched against submitted files
-            self.codename = get_cell(2, 2)  # B2
-            if not self.codename:
-                utils.write_error(
-                    self.parent_path, "Dateiname konnte nicht ausgelesen werden."
-                )
-                raise ExcelFileException(
-                    "Empty file name field. Please specify a valid name."
-                )
-            elif ".xlsx" in self.codename:
-                # Remove file ending, might get added accidentally
-                self.codename = self.codename.replace(".xlsx", "")
+                # Extract subject
+                self.corrector_title = get_cell(1, 2)  # B1
+                if not self.corrector_title:
+                    utils.write_error(self.parent_path, "Ungültiger Name im Titel.")
+                    raise ExcelFileException(
+                        "Empty title field. Please specify a valid name."
+                    )
 
-            self.codename = str(self.codename).strip()
+                # Name that should be matched against submitted files
+                self.codename = get_cell(2, 2)  # B2
+                if not self.codename:
+                    utils.write_error(
+                        self.parent_path, "Dateiname konnte nicht ausgelesen werden."
+                    )
+                    raise ExcelFileException(
+                        "Empty file name field. Please specify a valid name."
+                    )
+                elif ".xlsx" in self.codename:
+                    # Remove file ending, might get added accidentally
+                    self.codename = self.codename.replace(".xlsx", "")
+
+                self.codename = str(self.codename).strip()
+                self.deadline: datetime.datetime = get_cell(3, 2)  # B3
+                self.max_attempts = int(get_cell(4, 2) or 0)  # B4
+
+                # Grab exercise info
+                self.set_exercise_rows(get_cell=get_cell)
 
             # Check deadline, allow for same-day submissions
-            self.deadline: datetime.datetime = get_cell(3, 2)  # B3
             if not isinstance(self.deadline, datetime.datetime):
                 utils.write_error(self.parent_path, "Ungültige Frist.")
                 raise ExcelFileException("Invalid deadline.")
@@ -347,14 +395,24 @@ class Corrector(Commons):
                 # TODO: Accept file but remind students that the submission is past deadline
                 return
 
-            # Get max amount of attempts
-            self.max_attempts = int(get_cell(4, 2) or 0)  # B4
+            # Verify max amount of attempts
             if self.max_attempts < 1:
                 utils.write_error(self.parent_path, "Ungültige Anzahl an Versuchen.")
                 raise ExcelFileException("Invalid number of max attempts.")
 
-            # Grab exercise info
-            self.set_exercise_rows(get_cell=get_cell)
+            # Save state if new/changed
+            if not state or change_date != state.change_date:
+                self.log.debug("Updated/created saved state")
+                STATE.correctors[self.get_relevant_path("_")] = CorrectorDict(
+                    codename=self.codename,
+                    deadline=self.deadline,
+                    exercise_ranges=self.exercise_ranges,
+                    max_attempts=self.max_attempts,
+                    password=self.password,
+                    title=self.corrector_title,
+                    change_date=change_date,
+                )
+                STATE.save()
 
             self.valid = True
         except (pywintypes.com_error, TypeError, ValueError):
@@ -406,7 +464,9 @@ class Corrector(Commons):
 
             # Collect solutions
             solutions: typing.List[typing.List[dict]] = []
-            for idx, exercise in enumerate(self.exercise_ranges):  # type: (int, typing.List[int])
+            for idx, exercise in enumerate(
+                self.exercise_ranges
+            ):  # type: (int, typing.List[int])
                 if len(solutions) <= idx:
                     solutions.append([])
 
