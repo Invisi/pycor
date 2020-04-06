@@ -434,7 +434,7 @@ class Corrector(Commons):
                 excel.Application.Quit()
                 del excel
             else:
-                if wb and isinstance(wb, openpyxl.workbook.Workbook):
+                if wb:
                     wb.close()
 
     def generate_solutions(
