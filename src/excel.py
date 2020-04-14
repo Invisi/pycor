@@ -1,4 +1,5 @@
 import datetime
+import io
 import logging
 import os
 import typing
@@ -14,7 +15,7 @@ from cryptography import fernet
 
 import config  # type: ignore
 import utils  # type: ignore
-from state import State, CorrectorDict
+from state import CorrectorDict, State
 
 
 class ExcelFileException(Exception):
@@ -42,10 +43,19 @@ def setup_excel():
     return excel
 
 
+def load_workbook(excel_file: Path):
+    """
+    This is a nasty workaround for openpyxl not closing handles properly,
+    it might leak some memory until the GC runs again.
+    """
+    mem_file = io.BytesIO(excel_file.read_bytes())
+    return openpyxl.load_workbook(mem_file, read_only=True, data_only=True)
+
+
 class Commons:
     def __init__(self, excel_file: Path):
         self.excel_file = excel_file
-        self.parent_path = Path(os.path.abspath(excel_file.parent))
+        self.parent_path = excel_file.parent.resolve()
 
         self.log = logging.getLogger("PyCor").getChild("Excel")
         self.log.info("Opening %s", self.get_relevant_path())
@@ -150,7 +160,7 @@ class Student(Commons):
 
             # Open workbook (read-only) and grab first worksheet
             # Ignore formulas, ignore Excel's "smart" types
-            wb = openpyxl.load_workbook(self.excel_file, read_only=True, data_only=True)
+            wb = load_workbook(self.excel_file)
             ws = wb.worksheets[0]
 
             self.mat_num = int(ws.cell(10, 2).value or -1)
@@ -256,6 +266,7 @@ class Student(Commons):
             # There's at least one attempt left, let's log the results!
             if len(try_row) > 0:
                 block_status[try_row[0]] = correct_percentage
+                # noinspection PyTypeChecker
                 np.savetxt(exercise_file, block_status, fmt="%3.2f")
             else:
                 blocked = True
@@ -328,9 +339,7 @@ class Corrector(Commons):
                 self.exercise_ranges = state.exercise_ranges
             else:
                 if self.password == "":
-                    wb = openpyxl.load_workbook(
-                        self.excel_file, read_only=True, data_only=True
-                    )
+                    wb = load_workbook(self.excel_file)
                     ws = wb.worksheets[0]
                 else:
                     self.log.debug("File requires a password, can't open without Excel")
