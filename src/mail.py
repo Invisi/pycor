@@ -370,8 +370,9 @@ class Generator:
                 <p>
                     Liebe(r) Studierende(r),<br><br>
                     Sie haben eine Excel-Datei eingereicht, die keinem Modul zuzuordnen war. Möglicherweise wurde die 
-                    Datei beim Herunterladen umbenannt. Bitte vergleichen Sie den Namen der eingeschickten Datei 
-                    ({submitted_name}) mit Ihren Aufgabenblatt/der Datei auf Ilias.
+                    Datei beim Herunterladen umbenannt, oder die Abgabefrist ist bereits verstrichen. Bitte vergleichen 
+                    Sie den Namen der eingeschickten Datei ({submitted_name}) mit Ihren Aufgabenblatt/der Datei auf 
+                    Ilias. <br/>
                     Sollte der Fehler nicht ersichtlich sein, melden Sie sich bitte bei Ihrem/-r Professor/-in oder der 
                     PyCor-Administration.
                 </p>

@@ -208,7 +208,6 @@ class Student(Commons):
 
                 # Check if user's try list doesn't match the specified max_tries
                 if len(block_status) > max_attempts:
-                    # TODO: Shorten list and grab all attempts >0 in correct order
                     block_status = block_status[0:max_attempts]
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
                 elif len(block_status) < max_attempts:
@@ -401,7 +400,6 @@ class Corrector(Commons):
                     deadline_date,
                 )
                 utils.write_ignore(self.parent_path, "Abgabefrist ist abgelaufen.")
-                # TODO: Accept file but remind students that the submission is past deadline
                 return
 
             # Verify max amount of attempts
