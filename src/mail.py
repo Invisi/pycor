@@ -23,6 +23,27 @@ class LoginException(BaseException):
     pass
 
 
+# Find files and filter out non-xlsx
+def _filter(_: email.message.Message) -> bool:
+    # Throw out strings
+    if isinstance(_, str):
+        return False
+
+    # Non-excel files
+    if (
+        _.get_content_type() != EXCEL_MIME
+        and _.get_content_type() != "application/octet-stream"
+    ):
+        # Outlook for iOS (e.g.) will attach the file as octet-stream
+        return False
+
+    try:
+        file_name = _.get_filename().lower()
+        return file_name.endswith(".xlsx")
+    except AttributeError:
+        return False
+
+
 class Mail:
     def __init__(self):
         self.log = logging.getLogger("PyCor").getChild("Mail")
@@ -120,26 +141,6 @@ class Mail:
                     # Ignore mailer-daemon, no-reply, or own account
                     continue
                 elif student_email.endswith("fh-aachen.de"):
-                    # Find files and filter out non-xlsx
-                    def _filter(_: email.message.Message) -> bool:
-                        # Throw out strings
-                        if isinstance(_, str):
-                            return False
-
-                        # Non-excel files
-                        if (
-                            _.get_content_type() != EXCEL_MIME
-                            and _.get_content_type() != "application/octet-stream"
-                        ):
-                            # Outlook for iOS (e.g.) will attach the file as octet-stream
-                            return False
-
-                        try:
-                            file_name = _.get_filename().lower()
-                            return file_name.endswith(".xlsx")
-                        except AttributeError:
-                            return False
-
                     possible_files = list(filter(_filter, msg.get_payload()))
 
                     if len(possible_files) != 1:
@@ -294,6 +295,101 @@ class Mail:
         except LoginException:
             self.log.error("Failed to send mail to %s", recipient)
             raise
+
+    def forward_mails(self):
+        for code_name, details in getattr(config, "MAIL_FORWARDS", {}).items():
+            self.log.info("Downloading %s mails", code_name)
+
+            try:
+                imap = imaplib.IMAP4_SSL("imap.gmail.com")
+                imap.login(details["username"], details["password"])
+                imap.select("INBOX")
+
+                ret, message_str = imap.search(None, "(UNSEEN)")
+                if ret == "OK":
+                    message_ids = message_str[0].split()
+                    for message_id in message_ids:
+                        _, data = imap.fetch(message_id, "(RFC822)")
+
+                        msg: email.message.Message = email.message_from_bytes(
+                            data[0][1]
+                        )
+
+                        self.log.info(
+                            "%s - Forwarding message from %s (%s)",
+                            self.username,
+                            msg["From"],
+                            msg["Subject"],
+                        )
+
+                        student_email = email.utils.parseaddr(msg["From"])[1]
+
+                        if (
+                            any(
+                                _ in student_email
+                                for _ in ["noreply", "no-reply", "mailer-daemon"]
+                            )
+                            or student_email == self.username
+                            or student_email.startswith(details["username"])
+                        ):
+                            # Ignore mailer-daemon, no-reply, or own account
+                            continue
+                        elif student_email.endswith("fh-aachen.de"):
+                            possible_files = list(filter(_filter, msg.get_payload()))
+                            if len(possible_files) != 1:
+                                # No file, multiple files or invalid file. Notify student
+                                self.log.warning(
+                                    "Student submitted %s files.", len(possible_files)
+                                )
+                                self.send(
+                                    student_email, *Generator.invalid_attachment()
+                                )
+                                continue
+
+                            # Set correct name
+                            possible_files[0].set_param(
+                                "filename",
+                                f"{code_name}.xlsx",
+                                header="content-disposition",
+                            )
+                            possible_files[0].set_param(
+                                "filename", f"{code_name}.xlsx", header="content-type",
+                            )
+
+                            new_msg = email.mime.multipart.MIMEMultipart("alternative")
+                            new_msg["From"] = msg["From"]
+                            new_msg["To"] = config.MAIL_FROM
+                            new_msg["Subject"] = "Forwarded mail from {}".format(
+                                details["username"]
+                            )
+                            new_msg["Date"] = msg["Date"]
+                            new_msg.attach(possible_files[0])
+
+                            # Save file to inbox
+                            try:
+                                self.imap.append(
+                                    "INBOX",
+                                    "",
+                                    imaplib.Time2Internaldate(time.time()),
+                                    str(new_msg).encode("utf-8"),
+                                )
+                            except imaplib.IMAP4.abort:
+                                # Retry saving the mail
+                                self.imap_login()
+                                self.imap.append(
+                                    "INBOX",
+                                    "",
+                                    imaplib.Time2Internaldate(time.time()),
+                                    str(new_msg).encode("utf-8"),
+                                )
+                        else:
+                            # Notify sender about wrong email address
+                            self.log.debug("Wrong address")
+                            self.send(student_email, *Generator.wrong_address())
+
+            except smtplib.SMTPException:
+                self.log.exception("Failed to login to SMTP server.")
+                raise LoginException
 
 
 class Generator:

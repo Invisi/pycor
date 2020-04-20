@@ -41,3 +41,11 @@ SENTRY_DSN = None
 
 # Where to send mails with "PROBLEM" in the subject
 ADMIN_CONTACT = "uebungen.bau@fh-aachen.de"
+
+# Downloads mails from gmail and renames attachments
+MAIL_FORWARDS = {
+    "1234_1": {
+        "username": "",
+        "password": "",
+    }
+}

@@ -16,7 +16,7 @@ import mail  # type: ignore
 import post  # type: ignore
 import utils  # type: ignore
 
-__version__ = "2020-04-14"
+__version__ = "2020-04-20"
 
 
 def switch_tolerance(lower_tolerance: float, higher_tolerance: float):
@@ -143,6 +143,9 @@ def main():
 
     # Idling mail instance
     mail_instance = mail.Mail()
+
+    # Forward mails from known accounts
+    mail_instance.forward_mails()
 
     # Check inbox for new mails/submitted files
     student_files = mail_instance.check_inbox(valid_filenames)
