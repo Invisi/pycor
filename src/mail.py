@@ -387,8 +387,8 @@ class Mail:
                             self.log.debug("Wrong address")
                             self.send(student_email, *Generator.wrong_address())
 
-            except smtplib.SMTPException:
-                self.log.exception("Failed to login to SMTP server.")
+            except (imaplib.IMAP4.error, ConnectionError):
+                self.log.exception("Failed to login to IMAP server.")
                 raise LoginException
 
 
