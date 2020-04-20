@@ -351,9 +351,13 @@ class Mail:
                                 "filename",
                                 f"{code_name}.xlsx",
                                 header="content-disposition",
+                                replace=True,
                             )
                             possible_files[0].set_param(
-                                "name", f"{code_name}.xlsx", header="content-type",
+                                "name",
+                                f"{code_name}.xlsx",
+                                header="content-type",
+                                replace=True,
                             )
 
                             new_msg = email.mime.multipart.MIMEMultipart("alternative")
