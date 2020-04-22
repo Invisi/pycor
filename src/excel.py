@@ -430,6 +430,14 @@ class Corrector(Commons):
                 utils.write_error(self.parent_path, "Ungültige Anzahl an Versuchen.")
                 raise ExcelFileException("Invalid number of max attempts.")
 
+            if len(self.exercise_ranges) == 0:
+                utils.write_error(
+                    self.parent_path,
+                    "Keine Aufgaben gefunden, möglicherweise starten die "
+                    "Aufgaben nicht ab Zeile 13.",
+                )
+                raise ExcelFileException("No exercises found")
+
             # Save state if new/changed
             if not state or change_date != state.change_date:
                 self.log.debug("Updated/created saved state")
