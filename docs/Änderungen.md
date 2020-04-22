@@ -22,7 +22,7 @@ Von Studenten eingesandte Dateien werden anhand des Namens (ohne .xlsx!) dem cor
 dabei müssen diese Dateien auf .xlsx enden. Im Feld des correctors sollte lediglich der Dateiname 
 selbst ohne Dateiendung (`203131_1` statt `203131_1.xlsx`) eingetragen werden.
 
-##### Variable/Wert in A8:H9
+##### Variable/Wert in B9:I9
 Hier können Werte eingetragen werden, die neben der Matrikelnummer in die Berechnung der Studenten-
 spezifischen Aufgabe/Lösung einfließen sollen.
 
