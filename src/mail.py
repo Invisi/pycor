@@ -589,7 +589,7 @@ class Generator:
                 """
 
     @staticmethod
-    def exercise_ignored(
+    def exercise_erroneous(
         corrector_title: str, ignored: typing.List[int]
     ) -> typing.Tuple[str, str]:
         return (
@@ -603,6 +603,27 @@ class Generator:
                     die Nummerierung der Aufgaben nicht verändert wurde.<br>
                     Sollte der Fehler nicht zu finden sein, antworten Sie bitte auf diese Mail oder wenden Sie sich an 
                     Ihre/-n Professor/-in.
+                </p>
+                <p>
+                    Mit freundlichen Grüßen<br>
+                    <b>{corrector_title}</b> und PyCor
+                </p>
+            </html>
+            """,
+        )
+
+    @staticmethod
+    def exercise_ignored(corrector_title: str) -> typing.Tuple[str, str]:
+        return (
+            f"Problem: Fehler bei der Auswertung von {corrector_title}",
+            f"""
+            <html>
+                <p>
+                    Liebe(r) Studierende(r),<br><br>
+                    die eingesendete Datei wurde nicht korrigiert, da keine nicht bereits bestandene (oder blockierte) 
+                    Aufgabe vollständig angegeben wurde. Wenn Sie Teil-Lösungen einreichen möchten, setzen Sie 
+                    einfach alle anderen Werte der Aufgabe auf 0 o.ä.<br>
+                    Sollten weiterhin Probleme bestehen, antworten Sie bitte einfach auf diese Mail.
                 </p>
                 <p>
                     Mit freundlichen Grüßen<br>
