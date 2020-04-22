@@ -157,7 +157,7 @@ def main():
     for sf in student_files:
         try:
             corrector = sf["corrector"]
-            e = excel.Student(sf["student"])
+            e = excel.Student(sf["student"], corrector.dummy_count)
 
             # Couldn't find any solutions in submitted file
             if len(e.solutions) == 0:

@@ -148,7 +148,7 @@ class Commons:
 
 
 class Student(Commons):
-    def __init__(self, excel_file: Path):
+    def __init__(self, excel_file: Path, dummy_count: int = 8):
         super().__init__(excel_file)
 
         self.student_email = self.parent_path.name
@@ -166,7 +166,9 @@ class Student(Commons):
             self.mat_num = int(ws.cell(10, 2).value or -1)
             self.dummies = [
                 _.value
-                for _ in [ws.cell(9, column) for column in range(2, 10)]  # B9 - I9
+                for _ in [
+                    ws.cell(9, column) for column in range(2, dummy_count + 2)
+                ]  # B9 - I9 (or more)
             ]
 
             if self.mat_num < 0:
@@ -336,6 +338,7 @@ class Corrector(Commons):
                 self.password = state.password
                 self.corrector_title = state.title
                 self.exercise_ranges = state.exercise_ranges
+                self.dummy_count = state.dummy_count
             else:
                 if self.password == "":
                     wb = load_workbook(self.excel_file)
@@ -358,6 +361,9 @@ class Corrector(Commons):
                     else:
                         return ws.Cells(row, column).Value
 
+                # Set default dummy count
+                self.dummy_count = 8
+
                 # Extract subject
                 self.corrector_title = get_cell(1, 2)  # B1
                 if not self.corrector_title:
@@ -365,6 +371,23 @@ class Corrector(Commons):
                     raise ExcelFileException(
                         "Empty title field. Please specify a valid name."
                     )
+
+                # Get dummy count, if it is set verify it's a valid int
+                dummy_count = get_cell(7, 3)  # C7
+                if dummy_count:
+                    if (
+                        not str(dummy_count).isnumeric()
+                        or self.dummy_count < 0
+                        or self.dummy_count > 100
+                    ):
+                        utils.write_error(
+                            self.parent_path,
+                            "Ungültige Parameterzahl in C7. Bitte wählen Sie einen "
+                            "Wert zwischen 1 und 100 (inklusive).",
+                        )
+                        raise ExcelFileException("Invalid dummy value count")
+                    else:
+                        self.dummy_count = int(dummy_count)
 
                 # Name that should be matched against submitted files
                 self.codename = get_cell(2, 2)  # B2
@@ -418,6 +441,7 @@ class Corrector(Commons):
                     password=self.password,
                     title=self.corrector_title,
                     change_date=change_date,
+                    dummy_count=self.dummy_count,
                 )
                 STATE.save()
 
@@ -453,7 +477,7 @@ class Corrector(Commons):
         the solution's name, value, and tolerance.
 
         :param mat_num: Student's matriculation number
-        :param dummies: List of dummy values (a1-a8)
+        :param dummies: List of dummy values (e.g. a1-a8)
         """
         wb = None
         excel = None
@@ -467,7 +491,7 @@ class Corrector(Commons):
 
             # Copy values
             ws.Range("B10").Value = mat_num
-            ws.Range("B9:I9").Value = dummies
+            ws.Range(ws.Cells(9, 2), ws.Cells(9, self.dummy_count + 1)).Value = dummies
 
             # Collect solutions
             solutions: typing.List[typing.List[dict]] = []

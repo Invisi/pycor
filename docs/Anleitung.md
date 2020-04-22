@@ -12,6 +12,7 @@ diese mittels einer Excel-Vorlage.
 wird diese ignoriert.
 - Komplexe Lösungen vergleichen, die auf der Matrikelnummer und bis zu 8 
 anderen Variablen basieren.
+   - Werden mehr benötigt, kann die Anzahl in Feld C7 hinterlegt werden.
 - Erkennen, ob Studierende unter mehreren Matrikelnummern abgeben.
 - Sowohl absolute als auch relative Toleranz pro Ergebnis berücksichtigen.
 - Eine maximale Versuchszahl berücksichtigen und danach Nutzer sperren.

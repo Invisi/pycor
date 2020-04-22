@@ -13,6 +13,7 @@ class CorrectorDict(BaseModel):
     password: str
     title: str
     change_date: datetime.datetime
+    dummy_count: int = 8
 
 
 class State(BaseModel):

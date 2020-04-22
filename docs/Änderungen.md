@@ -6,7 +6,7 @@ folgende Änderungen vorgenommen werden:
 hier egal, sollte aber einem Muster von `ModulNummer_laufendeNummer` folgen.
 - Die Abgabefrist wird nun als normales Datum in B3 eingefügt
 - B4 enthält nun die Anzahl an Versuchen
-- "Dummies" bzw. a1-a100 ist nun in B9-I9 und auf 8 Werte begrenzt, ist aber auf Wunsch erweiterbar
+- "Dummies" bzw. a1-a100 ist nun in B9-I9 und auf 8 Werte begrenzt, ist aber durch Angabe der Anzahl in C7 erweiterbar
 - Die Matrikelnummer ist nun in B10
 - Die Werte/Aufgaben sind nun ab Reihe 13
 - Spalte E enthält nun eine absolute Wertetoleranz als Alternative zur relativen Toleranz in D
