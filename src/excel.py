@@ -98,6 +98,10 @@ class Commons:
                 if current_exercise <= 0:
                     raise ValueError
             except ValueError:
+                utils.write_error(
+                    self.parent_path,
+                    f"Ungültige Aufgabennummer in Zeile {index_num}",
+                )
                 raise ExcelFileException("Failed to parse exercise number")
 
             # We hit a new exercise
