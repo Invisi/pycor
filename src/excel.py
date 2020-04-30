@@ -99,8 +99,7 @@ class Commons:
                     raise ValueError
             except ValueError:
                 utils.write_error(
-                    self.parent_path,
-                    f"Ungültige Aufgabennummer in Zeile {index_num}",
+                    self.parent_path, f"Ungültige Aufgabennummer in Zeile {index_num}",
                 )
                 raise ExcelFileException("Failed to parse exercise number")
 
@@ -218,8 +217,8 @@ class Student(Commons):
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
                 elif len(block_status) < max_attempts:
                     # Extend list
-                    block_status = block_status + [0] * (
-                        max_attempts - len(block_status)
+                    block_status = np.append(
+                        block_status, [0] * (max_attempts - len(block_status))
                     )
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
 
