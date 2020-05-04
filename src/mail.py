@@ -388,8 +388,7 @@ class Mail:
                             self.send(student_email, *Generator.wrong_address())
 
             except (imaplib.IMAP4.error, ConnectionError):
-                self.log.exception("Failed to login to IMAP server.")
-                raise LoginException
+                self.log.exception("Failed to login to forwarding IMAP server.")
 
 
 class Generator:
