@@ -16,7 +16,7 @@ import mail  # type: ignore
 import post  # type: ignore
 import utils  # type: ignore
 
-__version__ = "2020-04-30"
+__version__ = "2020-05-05"
 
 
 def switch_tolerance(lower_tolerance: float, higher_tolerance: float):
@@ -336,6 +336,8 @@ def main():
         except IOError:
             log.exception("Critical error during processing. Quitting.")
             raise
+
+    mail_instance.logout()
 
     if len(student_files) > 0:
         # Run post processing on all matched correctors

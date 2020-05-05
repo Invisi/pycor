@@ -51,8 +51,9 @@ class Mail:
         self.username = config.MAIL_USER
         self.password = config.MAIL_PASS
 
-        self.imap = None
-        self.smtp = None
+        self.imap: typing.Optional[imaplib.IMAP4_SSL] = None
+        self.smtp: typing.Optional[smtplib.SMTP] = None
+        self.smtp_connected = False
 
         # Login
         self.imap_login()
@@ -74,17 +75,23 @@ class Mail:
             self.smtp.ehlo()
             self.smtp.starttls()
             self.smtp.login(config.MAIL_USER, config.MAIL_PASS)
+            self.smtp_connected = True
         except smtplib.SMTPException:
             self.log.exception("Failed to login to SMTP server.")
             raise LoginException
 
-    def smtp_logout(self):
+    def logout(self):
         if self.smtp:
             try:
                 self.smtp.quit()
             except smtplib.SMTPServerDisconnected:
                 # Ignore disconnect, that's kinda what we want to do anyway
                 pass
+        self.smtp_connected = False
+
+        if self.imap:
+            self.imap.close()
+            self.imap.logout()
 
     def check_inbox(
         self, valid_filenames: typing.Dict[str, excel.Corrector]
@@ -264,14 +271,15 @@ class Mail:
             self.log.debug("Sending mail: %s", content)
             return
         try:
-            self.smtp_login()
+            # Avoid reconnecting multiple times
+            if not self.smtp_connected:
+                self.smtp_login()
 
             # Attach html content if it's not a forwarded mail
             if isinstance(content, str):
                 msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
 
             self.smtp.sendmail(config.MAIL_FROM, recipient, msg.as_bytes())
-            self.smtp_logout()
             self.log.info("Sent mail to %s", recipient)
 
             # Save mail to Sent
