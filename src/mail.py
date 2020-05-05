@@ -70,15 +70,20 @@ class Mail:
             raise LoginException
 
     def smtp_login(self):
-        try:
-            self.smtp = smtplib.SMTP(config.MAIL_SMTP, 587)
-            self.smtp.ehlo()
-            self.smtp.starttls()
-            self.smtp.login(config.MAIL_USER, config.MAIL_PASS)
-            self.smtp_connected = True
-        except smtplib.SMTPException:
-            self.log.exception("Failed to login to SMTP server.")
-            raise LoginException
+        # Retry login a few times
+        for _ in range(5):
+            try:
+                self.smtp = smtplib.SMTP(config.MAIL_SMTP, 587)
+                self.smtp.ehlo()
+                self.smtp.starttls()
+                self.smtp.login(config.MAIL_USER, config.MAIL_PASS)
+                self.smtp_connected = True
+                return
+            except smtplib.SMTPException:
+                self.log.exception("Failed to login to SMTP server.")
+                time.sleep(30)
+
+        raise LoginException
 
     def logout(self):
         if self.smtp:
