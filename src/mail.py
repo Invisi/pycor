@@ -53,7 +53,7 @@ class Mail:
 
         self.imap: typing.Optional[imaplib.IMAP4_SSL] = None
         self.smtp: typing.Optional[smtplib.SMTP] = None
-        self.smtp_connected = False
+        self.smtp_connected: typing.Optional[float] = None
 
         # Login
         self.imap_login()
@@ -70,6 +70,10 @@ class Mail:
             raise LoginException
 
     def smtp_login(self):
+        # Log out if logged in
+        if self.smtp:
+            self.logout(smtp_only=True)
+
         # Retry login a few times
         for _ in range(5):
             try:
@@ -77,7 +81,7 @@ class Mail:
                 self.smtp.ehlo()
                 self.smtp.starttls()
                 self.smtp.login(config.MAIL_USER, config.MAIL_PASS)
-                self.smtp_connected = True
+                self.smtp_connected = time.time()
                 return
             except smtplib.SMTPException:
                 self.log.exception("Failed to login to SMTP server.")
@@ -85,16 +89,16 @@ class Mail:
 
         raise LoginException
 
-    def logout(self):
+    def logout(self, smtp_only=False):
         if self.smtp:
             try:
                 self.smtp.quit()
             except smtplib.SMTPServerDisconnected:
                 # Ignore disconnect, that's kinda what we want to do anyway
                 pass
-        self.smtp_connected = False
+        self.smtp_connected = None
 
-        if self.imap:
+        if self.imap and not smtp_only:
             self.imap.close()
             self.imap.logout()
 
@@ -277,9 +281,15 @@ class Mail:
             return
         try:
             # Avoid reconnecting multiple times
-            if not self.smtp_connected:
+            if (
+                self.smtp_connected is None
+                or time.time() - self.smtp_connected > 5 * 60  # Over 5 minutes
+            ):
                 self.smtp_login()
-
+        except LoginException:
+            self.log.error("Failed to send mail to %s", recipient)
+            raise
+        else:
             # Attach html content if it's not a forwarded mail
             if isinstance(content, str):
                 msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
@@ -304,10 +314,6 @@ class Mail:
                     imaplib.Time2Internaldate(time.time()),
                     str(msg).encode("utf-8"),
                 )
-
-        except LoginException:
-            self.log.error("Failed to send mail to %s", recipient)
-            raise
 
     def forward_mails(self):
         for code_name, details in getattr(config, "MAIL_FORWARDS", {}).items():
