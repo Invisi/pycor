@@ -39,6 +39,9 @@ SHOW_EXCEL = False
 # Sentry DSN
 SENTRY_DSN = None
 
+# Healthcheck address
+HEALTHCHECK_PING = None
+
 # Where to send mails with "PROBLEM" in the subject
 ADMIN_CONTACT = "uebungen.bau@fh-aachen.de"
 

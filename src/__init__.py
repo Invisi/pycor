@@ -7,6 +7,7 @@ import time
 import typing
 from pathlib import Path
 from sys import exit
+from urllib import error, request
 
 from cryptography.fernet import Fernet
 
@@ -345,6 +346,12 @@ def main():
             post.PostProcessing(
                 corrector.parent_path, len(corrector.exercise_ranges)
             ).run()
+
+    if hasattr(config, "HEALTHCHECK_PING") and config.HEALTHCHECK_PING:
+        try:
+            request.urlopen(config.HEALTHCHECK_PING)
+        except error.HTTPError:
+            logging.exception("Failed to ping healthcheck.")
 
 
 if __name__ == "__main__":
