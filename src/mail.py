@@ -130,21 +130,6 @@ class Mail:
                     msg["Subject"],
                 )
 
-                # Forward mails to admin if subject contains "problem"
-                if (
-                    msg["Subject"]
-                    and "problem" in msg["Subject"].lower()
-                    and config.ADMIN_CONTACT
-                ):
-                    msg.replace_header(
-                        "Subject", f"PyCor: {msg['Subject']} from {msg['From']}"
-                    )
-                    msg.replace_header("From", "PyCor <{}>".format(config.MAIL_FROM))
-                    msg.replace_header("To", config.ADMIN_CONTACT)
-                    msg.replace_header("Date", formatdate(localtime=True))
-                    self.send(config.ADMIN_CONTACT, "", msg)
-                    continue
-
                 student_email = email.utils.parseaddr(msg["From"])[1]
 
                 if (
@@ -157,6 +142,24 @@ class Mail:
                     # Ignore mailer-daemon, no-reply, or own account
                     continue
                 elif student_email.endswith("fh-aachen.de"):
+                    # Forward mails to admin if subject contains "problem"
+                    if (
+                        msg["Subject"]
+                        and "problem" in msg["Subject"].lower()
+                        and config.ADMIN_CONTACT
+                    ):
+                        msg.replace_header(
+                            "Subject", f"PyCor: {msg['Subject']} from {msg['From']}"
+                        )
+                        msg.replace_header(
+                            "From", "PyCor <{}>".format(config.MAIL_FROM)
+                        )
+                        msg.replace_header("To", config.ADMIN_CONTACT)
+                        msg.replace_header("Date", formatdate(localtime=True))
+                        self.send(config.ADMIN_CONTACT, "", msg)
+                        self.send(student_email, *Generator.problem_forwarded())
+                        continue
+
                     possible_files = list(filter(_filter, msg.get_payload()))
 
                     if len(possible_files) != 1:
@@ -642,6 +645,26 @@ class Generator:
                 <p>
                     Mit freundlichen Grüßen<br>
                     <b>{corrector_title}</b> und PyCor
+                </p>
+            </html>
+            """,
+        )
+
+    @staticmethod
+    def problem_forwarded() -> typing.Tuple[str, str]:
+        return (
+            "Problemmeldung weitergeleitet",
+            """
+            <html>
+                <p>
+                    Liebe(r) Studierende(r),<br><br>
+                    Ihre Problemmeldung wurde an die PyCor-Administration weitergeleitet, die sich schnellstmöglich 
+                    zurückmelden wird.<br>
+                    Die eingesandte Datei wird nicht korrigiert.
+                </p>
+                <p>
+                    Mit freundlichen Grüßen<br>
+                    PyCor
                 </p>
             </html>
             """,
