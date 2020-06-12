@@ -23,6 +23,17 @@ class LoginException(BaseException):
     pass
 
 
+def _encode_name(x: str):
+    try:
+        file_name, charset = email.header.decode_header(x)[0]
+        if charset:
+            file_name = file_name.decode(charset)
+        return file_name
+    except (AttributeError, KeyError, email.errors.MessageError):
+        logging.exception("Failed to decode filename")
+        return ""
+
+
 # Find files and filter out non-xlsx
 def _filter(_: email.message.Message) -> bool:
     # Throw out strings
@@ -37,11 +48,7 @@ def _filter(_: email.message.Message) -> bool:
         # Outlook for iOS (e.g.) will attach the file as octet-stream
         return False
 
-    try:
-        file_name = _.get_filename().lower()
-        return file_name.endswith(".xlsx")
-    except AttributeError:
-        return False
+    return _encode_name(_.get_filename()).lower().endswith(".xlsx")
 
 
 class Mail:
@@ -170,9 +177,9 @@ class Mail:
                         self.send(student_email, *Generator.invalid_attachment())
                         continue
 
+                    file_name = _encode_name(possible_files[0].get_filename())
                     stripped_filename = (
-                        possible_files[0]
-                        .get_filename()
+                        file_name
                         .lower()
                         .replace(".xlsx", "")
                         .strip()
@@ -186,23 +193,8 @@ class Mail:
                         # Unknown subject. Notify student
                         self.log.warning("Student submitted unknown subject.")
 
-                        filename = possible_files[0].get_filename()
-                        if "=?" in filename:
-                            try:
-                                header = email.header.decode_header(filename)
-                                if len(header) > 0:
-                                    content, encoding = header[0]
-                                    if encoding:
-                                        filename = content.decode(encoding)
-                                    else:
-                                        self.log.warning(
-                                            "Failed to determine encoding for filename"
-                                        )
-                            except email.errors.HeaderParseError:
-                                self.log.error("Failed to parse header for filename")
-
                         self.send(
-                            student_email, *Generator.unknown_attachment(filename)
+                            student_email, *Generator.unknown_attachment(file_name)
                         )
                         continue
 
