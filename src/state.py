@@ -2,7 +2,7 @@ import datetime
 import typing
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel  # type: ignore
 
 
 class CorrectorDict(BaseModel):

@@ -11,11 +11,12 @@ import openpyxl.reader.excel  # type: ignore
 import openpyxl.worksheet.worksheet  # type: ignore
 import pywintypes  # type: ignore
 import win32com.client  # type: ignore
-from cryptography import fernet
+from cryptography import fernet  # type: ignore
+from win32com.client.dynamic import CDispatch  # type: ignore
 
 import config  # type: ignore
 import utils  # type: ignore
-from state import CorrectorDict, State
+from .state import CorrectorDict, State
 
 
 class ExcelFileException(Exception):
@@ -26,7 +27,7 @@ class ExcelFileException(Exception):
 STATE = State.load()
 
 
-def setup_excel():
+def setup_excel() -> CDispatch:
     excel = win32com.client.Dispatch("Excel.Application")
 
     # "Do you want to save your work?"
@@ -52,6 +53,17 @@ def load_workbook(excel_file: Path):
     return openpyxl.load_workbook(mem_file, read_only=True, data_only=True)
 
 
+def get_cell(
+    ws: typing.Union[openpyxl.reader.excel.ReadOnlyWorksheet, typing.Any],
+    row: int,
+    column: int,
+) -> typing.Union[int, float, str, datetime.datetime]:
+    if isinstance(ws, openpyxl.reader.excel.ReadOnlyWorksheet):
+        return ws.cell(row, column).value
+    else:
+        return ws.Cells(row, column).Value
+
+
 class Commons:
     def __init__(self, excel_file: Path):
         self.excel_file = excel_file
@@ -61,16 +73,22 @@ class Commons:
         self.log.info("Opening %s", self.get_relevant_path())
 
         self.exercise_ranges: typing.List[typing.List[int]] = []
-        self.solutions: typing.List[typing.List[int]] = []
+        self.solutions: typing.List[
+            typing.List[typing.Union[int, str, float, datetime.datetime]]
+        ] = []
 
     def get_relevant_path(self, separator: str = os.sep):
         return separator.join(self.excel_file.parts[-3:])
 
-    def set_exercise_rows(self, get_cell: typing.Callable, is_student: bool = False):
+    def set_exercise_rows(
+        self,
+        ws: typing.Union[openpyxl.reader.excel.ReadOnlyWorksheet, typing.Any],
+        is_student: bool = False,
+    ):
         """
         Extract amount of exercises, their ranges, and (if needed) entered solutions
 
-        :param get_cell: Function to access the cells
+        :param ws: The worksheet
         :param is_student: Whether to grab the solutions or not, only necessary in student files
         :return:
         """
@@ -85,16 +103,16 @@ class Commons:
             self.solutions = []
 
         while True:
-            current_exercise = get_cell(index_num, 1)  # A{index_num}
+            exercise_val = get_cell(ws, index_num, 1)  # A{index_num}
 
             # It's None once we are past all listed exercises or once we hit a hole
-            if current_exercise is None:
+            if exercise_val is None:
                 exercise_row_end.append(index_num - 1)
                 break
 
             # Parse as int, convention
             try:
-                current_exercise = int(current_exercise)
+                current_exercise: int = int(exercise_val)  # type: ignore
                 if current_exercise <= 0:
                     raise ValueError
             except ValueError:
@@ -115,14 +133,14 @@ class Commons:
                     self.solutions.append([])
 
                 self.solutions[current_exercise - 1].append(
-                    get_cell(index_num, 3)
+                    get_cell(ws, index_num, 3)
                 )  # C{index_sum}
             else:
                 # Verify tolerances are set correctly
                 try:
-                    tolerance_rel = get_cell(index_num, 4)  # D{index}
+                    tolerance_rel = get_cell(ws, index_num, 4)  # D{index}
                     if tolerance_rel:
-                        _ = float(tolerance_rel)
+                        _ = float(tolerance_rel)  # type: ignore
                 except ValueError:
                     utils.write_error(
                         self.parent_path,
@@ -131,9 +149,9 @@ class Commons:
                     raise ExcelFileException("Invalid relative tolerance.")
 
                 try:
-                    tolerance_abs = get_cell(index_num, 5)  # E{index}
+                    tolerance_abs = get_cell(ws, index_num, 5)  # E{index}
                     if tolerance_abs:
-                        _ = float(tolerance_abs)
+                        _ = float(tolerance_abs)  # type: ignore
                 except ValueError:
                     utils.write_error(
                         self.parent_path,
@@ -147,7 +165,7 @@ class Commons:
             self.exercise_ranges.append([exercise_row_begin[i], exercise_row_end[i]])
 
     def __str__(self):
-        return self.excel_file
+        return str(self.excel_file)
 
 
 class Student(Commons):
@@ -156,23 +174,32 @@ class Student(Commons):
 
         self.student_email = self.parent_path.name
 
-        wb = None
+        wb: typing.Union[openpyxl.workbook.Workbook, typing.Any] = None
+        excel: typing.Optional[CDispatch] = None
         try:
             # Whether the file is considered valid
             self.valid = False
 
-            # Open workbook (read-only) and grab first worksheet
-            # Ignore formulas, ignore Excel's "smart" types
-            wb = load_workbook(self.excel_file)
-            ws = wb.worksheets[0]
-
-            self.mat_num = int(ws.cell(10, 2).value or -1)
+            # File is a zipfile, open via openpyxl (read-only, fast)
+            if zipfile.is_zipfile(self.excel_file):
+                # Ignore formulas, ignore Excel's "smart" types
+                wb = load_workbook(self.excel_file)
+                ws = wb.worksheets[0]
+            else:
+                self.log.debug("Opening file via Excel since it's not a ZIP")
+                excel = setup_excel()
+                wb = excel.Workbooks.Open(self.excel_file, 0, False, None)
+                ws = wb.Worksheets(1)
+        except (TypeError, ValueError):
+            self.log.exception("Failed to read info from student file.")
+            raise ExcelFileException("Failed to read information from student file.")
+        except zipfile.BadZipFile:
+            self.log.exception("Failed to open zip-like .xlsx file.")
+        else:
+            self.mat_num = int(get_cell(ws, 10, 2) or -1)  # type: ignore
             self.dummies = [
-                _.value
-                for _ in [
-                    ws.cell(9, column) for column in range(2, dummy_count + 2)
-                ]  # B9 - I9 (or more)
-            ]
+                get_cell(ws, 9, column) for column in range(2, dummy_count + 2)
+            ]  # B9 - I9 (or more)
 
             if self.mat_num < 0:
                 self.log.error(
@@ -180,19 +207,18 @@ class Student(Commons):
                 )
                 raise ExcelFileException("Invalid mat_num")
 
-            self.set_exercise_rows(
-                is_student=True, get_cell=lambda r, c: ws.cell(r, c).value
-            )
+            self.set_exercise_rows(ws, is_student=True)
             self.valid = True
-        except (TypeError, ValueError):
-            self.log.exception("Failed to read info from student file.")
-            raise ExcelFileException("Failed to read information from student file.")
-        except zipfile.BadZipFile:
-            self.log.exception("Failed to open file, maybe it's password-protected?")
-            raise ExcelFileException("Password-protected file?")
         finally:
-            if wb:
-                wb.close()
+            if excel:
+                if wb:
+                    # noinspection PyUnresolvedReferences
+                    wb.Close(SaveChanges=False)
+                excel.Application.Quit()
+                del excel
+            else:
+                if wb:
+                    wb.close()
 
     def get_stats(self, exercise: int, max_attempts: int) -> typing.Tuple[bool, bool]:
         """
@@ -220,6 +246,7 @@ class Student(Commons):
                     block_status = np.append(
                         block_status, [0] * (max_attempts - len(block_status))
                     )
+                    # noinspection PyTypeChecker
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
 
                 if 0 < block_status[-1] < 100:
@@ -321,7 +348,7 @@ class Corrector(Commons):
             return
 
         wb: typing.Union[openpyxl.workbook.Workbook, typing.Any] = None
-        excel = None
+        excel: typing.Optional[CDispatch] = None
         try:
             # Whether the file is considered valid
             self.valid = False
@@ -349,8 +376,9 @@ class Corrector(Commons):
                 else:
                     self.log.debug("File requires a password, can't open without Excel")
                     """
-                       Open workbook in Excel. It has to be Excel because workbook-wide encryption creates a weird FAT-like 
-                       compound archive that can't be read with any (currently) existing library.
+                       Open workbook in Excel. It has to be Excel because workbook-wide 
+                       encryption creates a weird FAT-like compound archive that can't 
+                       be read with any (currently) existing library.
                     """
                     excel = setup_excel()
                     wb = excel.Workbooks.Open(
@@ -358,17 +386,11 @@ class Corrector(Commons):
                     )
                     ws = wb.Worksheets(1)
 
-                def get_cell(row, column):
-                    if isinstance(ws, openpyxl.reader.excel.ReadOnlyWorksheet):
-                        return ws.cell(row, column).value
-                    else:
-                        return ws.Cells(row, column).Value
-
                 # Set default dummy count
                 self.dummy_count = 8
 
                 # Extract subject
-                self.corrector_title = get_cell(1, 2)  # B1
+                self.corrector_title = get_cell(ws, 1, 2)  # B1
                 if not self.corrector_title:
                     utils.write_error(self.parent_path, "Ungültiger Name im Titel.")
                     raise ExcelFileException(
@@ -376,7 +398,7 @@ class Corrector(Commons):
                     )
 
                 # Get dummy count, if it is set verify it's a valid int
-                dummy_count = get_cell(7, 3)  # C7
+                dummy_count = get_cell(ws, 7, 3)  # C7
                 if dummy_count:
                     if (
                         not str(dummy_count).isnumeric()
@@ -390,10 +412,10 @@ class Corrector(Commons):
                         )
                         raise ExcelFileException("Invalid dummy value count")
                     else:
-                        self.dummy_count = int(dummy_count)
+                        self.dummy_count = int(dummy_count)  # type: ignore
 
                 # Name that should be matched against submitted files
-                self.codename = get_cell(2, 2)  # B2
+                self.codename = get_cell(ws, 2, 2)  # B2
                 if not self.codename:
                     utils.write_error(
                         self.parent_path, "Dateiname konnte nicht ausgelesen werden."
@@ -401,16 +423,16 @@ class Corrector(Commons):
                     raise ExcelFileException(
                         "Empty file name field. Please specify a valid name."
                     )
-                elif ".xlsx" in self.codename:
+                elif ".xlsx" in str(self.codename):
                     # Remove file ending, might get added accidentally
-                    self.codename = self.codename.replace(".xlsx", "")
+                    self.codename = str(self.codename).replace(".xlsx", "")
 
                 self.codename = str(self.codename).strip()
-                self.deadline: datetime.datetime = get_cell(3, 2)  # B3
-                self.max_attempts = int(get_cell(4, 2) or 0)  # B4
+                self.deadline = get_cell(ws, 3, 2)  # B3
+                self.max_attempts = int(get_cell(ws, 4, 2) or 0)  # type: ignore # B4
 
                 # Grab exercise info
-                self.set_exercise_rows(get_cell=get_cell)
+                self.set_exercise_rows(ws)
 
             # Check deadline, allow for same-day submissions
             if not isinstance(self.deadline, datetime.datetime):

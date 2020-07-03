@@ -23,12 +23,12 @@ class LoginException(BaseException):
     pass
 
 
-def _encode_name(x: str):
+def _encode_name(x: str) -> str:
     try:
         file_name, charset = email.header.decode_header(x)[0]
         if charset:
-            file_name = file_name.decode(charset)
-        return file_name
+            return file_name.decode(charset)
+        return str(file_name)
     except (AttributeError, KeyError, email.errors.MessageError):
         logging.exception("Failed to decode filename")
         return ""
