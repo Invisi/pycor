@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 
-import config  # type: ignore
+from pycor import config
 
 
 class PostProcessing:

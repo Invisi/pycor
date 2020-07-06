@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import datetime
 import logging
 import logging.handlers
@@ -10,7 +9,7 @@ from pathlib import Path
 
 import sentry_sdk  # type: ignore
 
-import config  # type: ignore
+from pycor import config
 
 
 def setup_logger(level=logging.DEBUG):

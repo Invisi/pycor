@@ -12,9 +12,9 @@ import typing
 from email.utils import formatdate
 from pathlib import Path
 
-import excel  # type: ignore
-import utils  # type: ignore
-import config  # type: ignore
+from pycor import excel
+from pycor import utils
+from pycor import config
 
 EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 

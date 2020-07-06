@@ -18,7 +18,7 @@ env/
 venv/
 
 test_folder/
-src/config.py
+pycor/config.py
 logs/
 state.json
 

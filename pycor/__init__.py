@@ -11,13 +11,13 @@ from urllib import error, request
 
 from cryptography.fernet import Fernet
 
-import config  # type: ignore
-import excel  # type: ignore
-import mail  # type: ignore
-import post  # type: ignore
-import utils  # type: ignore
+from pycor import config
+from pycor import excel
+from pycor import mail
+from pycor import post
+from pycor import utils
 
-__version__ = "2020-05-05"
+__version__ = "2020-07-06"
 
 
 def switch_tolerance(lower_tolerance: float, higher_tolerance: float):
@@ -105,8 +105,8 @@ def find_valid_filenames() -> typing.Dict[str, excel.Corrector]:
     valid_filenames: typing.Dict[str, excel.Corrector] = {}
 
     # Find configured groups
-    for group in config.FOLDERS:
-        group = Path(os.path.abspath(group))
+    for group_path in config.FOLDERS:
+        group: Path = Path(os.path.abspath(group_path))
 
         # Iterate over subjects
         for subject in group.iterdir():

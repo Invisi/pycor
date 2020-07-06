@@ -14,8 +14,8 @@ import win32com.client  # type: ignore
 from cryptography import fernet  # type: ignore
 from win32com.client.dynamic import CDispatch  # type: ignore
 
-import config  # type: ignore
-import utils  # type: ignore
+from pycor import config
+from pycor import utils
 from .state import CorrectorDict, State
 
 
