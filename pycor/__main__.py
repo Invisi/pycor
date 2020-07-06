@@ -7,8 +7,8 @@ from pathlib import Path
 
 from cryptography.fernet import Fernet
 
-import config
-import utils
+from . import config
+from . import utils
 
 __version__ = "2020-07-06"
 
