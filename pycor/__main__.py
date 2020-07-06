@@ -38,7 +38,7 @@ if __name__ == "__main__":
         pw2 = getpass.getpass("Enter password again: ")
 
         if pw != pw2 or not pw:
-            print("Passwords to not match or empty password supplied!")
+            print("Passwords do not match or empty password supplied!")
             exit(1)
         else:
             psw.write_bytes(Fernet(config.PSW_PASSPHRASE).encrypt(bytes(pw, "utf-8")))
