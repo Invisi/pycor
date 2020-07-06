@@ -16,7 +16,7 @@ from win32com.client.dynamic import CDispatch  # type: ignore
 
 from pycor import config
 from pycor import utils
-from .state import CorrectorDict, State
+from pycor.state import CorrectorDict, State
 
 
 class ExcelFileException(Exception):
