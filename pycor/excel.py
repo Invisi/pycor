@@ -190,7 +190,8 @@ class Student(Commons):
                 excel = setup_excel()
                 wb = excel.Workbooks.Open(self.excel_file, 0, False, None)
                 ws = wb.Worksheets(1)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, KeyError):
+            # KeyError happens if it's an invalid xlsx, like when a .ods is renamed.
             self.log.exception("Failed to read info from student file.")
             raise ExcelFileException("Failed to read information from student file.")
         except zipfile.BadZipFile:
@@ -479,7 +480,7 @@ class Corrector(Commons):
                 STATE.save()
 
             self.valid = True
-        except (pywintypes.com_error, TypeError, ValueError):
+        except (pywintypes.com_error, TypeError, ValueError, KeyError):
             self.log.exception("Failed to read information from corrector.")
             utils.write_error(
                 self.parent_path, "Fehler beim Einlesen der corrector-Datei."
