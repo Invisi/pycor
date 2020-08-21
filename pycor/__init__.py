@@ -339,5 +339,5 @@ def main():
     if hasattr(config, "HEALTHCHECK_PING") and config.HEALTHCHECK_PING:
         try:
             request.urlopen(config.HEALTHCHECK_PING)
-        except error.HTTPError:
-            logging.exception("Failed to ping healthcheck.")
+        except (error.HTTPError, OSError):
+            log.exception("Failed to ping healthcheck.")
