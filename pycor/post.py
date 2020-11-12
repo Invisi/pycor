@@ -194,7 +194,7 @@ class PostProcessing:
         # Plot exercise
         for ex in range(self.exercise_count):
             # Ignore missing exercise data
-            if len(total[:, ex]) >= 1:
+            if total.ndim == 2 and len(total[:, ex]) >= 1:
                 y_submitted = np.bincount(total[:, ex])
                 y_passed = np.bincount(passed[:, ex])
 
