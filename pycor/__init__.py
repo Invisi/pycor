@@ -4,7 +4,6 @@ import typing
 from pathlib import Path
 from urllib import error, request
 
-from excel import Corrector
 from pycor import config, excel, mail, post, utils
 
 log = utils.setup_logger(logging.DEBUG if config.DEBUG else logging.INFO)
@@ -145,17 +144,18 @@ def main():
     student_files.sort(key=lambda x: x["corrector"].codename)
 
     # Keep track of current corrector to close Excel during changes
-    current_corrector: Corrector = student_files[0]["corrector"]
+    current_corrector: typing.Optional[excel.Corrector] = None
 
     # Correct each file
     for sf in student_files:
         try:
-            corrector: Corrector = sf["corrector"]
+            corrector: excel.Corrector = sf["corrector"]
             e = excel.Student(sf["student"], corrector.dummy_count)
 
             # Close and reopen Excel
             if corrector != current_corrector:
-                current_corrector.close_excel()
+                if current_corrector:
+                    current_corrector.close_excel()
                 current_corrector = corrector
                 corrector.open_excel()
 
