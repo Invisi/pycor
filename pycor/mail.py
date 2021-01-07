@@ -178,12 +178,7 @@ class Mail:
                         continue
 
                     file_name = _encode_name(possible_files[0].get_filename())
-                    stripped_filename = (
-                        file_name
-                        .lower()
-                        .replace(".xlsx", "")
-                        .strip()
-                    )
+                    stripped_filename = file_name.lower().replace(".xlsx", "").strip()
                     subject_corrector = None
                     for valid_filename, corr in valid_filenames.items():
                         if valid_filename == stripped_filename:
@@ -281,6 +276,24 @@ class Mail:
                 or time.time() - self.smtp_connected > 5 * 60  # Over 5 minutes
             ):
                 self.smtp_login()
+
+            # Retry sending the mail a few times
+            # TODO: Hello potential successor, please move mails to a different worker thread or just use Celery.
+            #       Message handling should not be in the main thread if every small thing
+            #       might go down at random.
+            for _ in range(6):
+                try:
+                    self.smtp.sendmail(config.MAIL_FROM, recipient, msg.as_bytes())
+                    self.log.info("Sent mail to %s", recipient)
+                except smtplib.SMTPServerDisconnected:
+                    if _ < 5:
+                        self.log.error("Failed to send email, will retry")
+                        self.smtp_login()
+                    else:
+                        self.log.critical(
+                            "SMTP server still did not respond correctly. Raising exception."
+                        )
+                        raise LoginException
         except LoginException:
             self.log.error("Failed to send mail to %s", recipient)
             raise
@@ -288,9 +301,6 @@ class Mail:
             # Attach html content if it's not a forwarded mail
             if isinstance(content, str):
                 msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
-
-            self.smtp.sendmail(config.MAIL_FROM, recipient, msg.as_bytes())
-            self.log.info("Sent mail to %s", recipient)
 
             # Save mail to Sent
             try:
