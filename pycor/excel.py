@@ -336,6 +336,7 @@ class Corrector(Commons):
     def __init__(self, excel_file: Path):
         super().__init__(excel_file)
         self.password = self.find_password()
+        self.excel_instance: typing.Optional[CDispatch] = None
 
         # Password could not be decrypted
         if self.password is None:
@@ -502,6 +503,21 @@ class Corrector(Commons):
                 if wb:
                     wb.close()
 
+    def open_excel(self):
+        """Opens Excel if necessary"""
+        try:
+            self.excel_instance = setup_excel()
+        except (pywintypes.com_error, TypeError, ValueError):
+            logging.critical("Failed to open Excel")
+            raise ExcelFileException("Failed to generate solutions.")
+
+    def close_excel(self):
+        """Closes Excel instance after processing for this corrector is done"""
+        if self.excel_instance:
+            self.excel_instance.Application.Quit()
+            del self.excel_instance
+            self.excel_instance = None
+
     def generate_solutions(
         self, mat_num: int, dummies: typing.List[typing.Any]
     ) -> typing.Optional[list]:
@@ -514,13 +530,11 @@ class Corrector(Commons):
         :param dummies: List of dummy values (e.g. a1-a8)
         """
         wb = None
-        excel = None
-
         try:
-            excel = setup_excel()
-
             # Open workbook
-            wb = excel.Workbooks.Open(self.excel_file, 0, False, None, self.password)
+            wb = self.excel_instance.Workbooks.Open(
+                self.excel_file, 0, False, None, self.password
+            )
             ws = wb.Worksheets(1)
 
             # Copy values
@@ -556,9 +570,6 @@ class Corrector(Commons):
             # Close WorkBook and Excel
             if wb:
                 wb.Close(SaveChanges=False)
-            if excel:
-                excel.Application.Quit()
-                del excel
 
     def convert_to_xlsx(self):
         """
