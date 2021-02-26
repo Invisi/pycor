@@ -10,7 +10,7 @@ from cryptography.fernet import Fernet
 from . import config
 from . import utils
 
-__version__ = "2021-01-07"
+__version__ = "2021-02-26"
 
 from pycor import log, main
 
