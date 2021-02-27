@@ -269,6 +269,11 @@ class Mail:
         if hasattr(config, "DISABLE_OUTGOING_MAIL") and config.DISABLE_OUTGOING_MAIL:
             self.log.debug("Sending mail: %s", content)
             return
+
+        # Attach html content if it's not a forwarded mail
+        if isinstance(content, str):
+            msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
+
         try:
             # Avoid reconnecting multiple times
             if (
@@ -285,6 +290,7 @@ class Mail:
                 try:
                     self.smtp.sendmail(config.MAIL_FROM, recipient, msg.as_bytes())
                     self.log.info("Sent mail to %s", recipient)
+                    break
                 except smtplib.SMTPServerDisconnected:
                     if _ < 5:
                         self.log.error("Failed to send email, will retry")
@@ -298,10 +304,6 @@ class Mail:
             self.log.error("Failed to send mail to %s", recipient)
             raise
         else:
-            # Attach html content if it's not a forwarded mail
-            if isinstance(content, str):
-                msg.attach(email.mime.text.MIMEText(content, "html", "utf-8"))
-
             # Save mail to Sent
             try:
                 self.imap.append(
