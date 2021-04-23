@@ -2,10 +2,7 @@
 DEBUG = False
 
 # Sets folders containing subjects over which will be iterated
-FOLDERS = [
-    'test_folder\\folder 1',
-    'test_folder\\folder 2'
-]
+FOLDERS = ["test_folder\\folder 1", "test_folder\\folder 2"]
 
 # Username
 MAIL_USER = "root@localhost"
@@ -28,10 +25,10 @@ MARK_MAILS_AS_READ = False
 DELAY_SLEEP = 10
 
 # Passphrase for corrector pws files (Base64)
-PSW_PASSPHRASE = 'gC9VGy09lEk7zK1257Pzj5-mDPclX_FScqLC2RLObyU='
+PSW_PASSPHRASE = "gC9VGy09lEk7zK1257Pzj5-mDPclX_FScqLC2RLObyU="
 
 # Ignored folder names
-FOLDER_IGNORE = ['_postprocessing', 'PyCor_documentation']
+FOLDER_IGNORE = ["_postprocessing", "PyCor_documentation"]
 
 # Make excel visible during processing
 SHOW_EXCEL = False

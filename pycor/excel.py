@@ -14,8 +14,7 @@ import win32com.client  # type: ignore
 from cryptography import fernet  # type: ignore
 from win32com.client.dynamic import CDispatch  # type: ignore
 
-from pycor import config
-from pycor import utils
+from pycor import config, utils
 from pycor.state import CorrectorDict, State
 
 
@@ -117,7 +116,8 @@ class Commons:
                     raise ValueError
             except ValueError:
                 utils.write_error(
-                    self.parent_path, f"Ungültige Aufgabennummer in Zeile {index_num}",
+                    self.parent_path,
+                    f"Ungültige Aufgabennummer in Zeile {index_num}",
                 )
                 raise ExcelFileException("Failed to parse exercise number")
 
@@ -130,7 +130,8 @@ class Commons:
             if is_student:
                 # Collect submitted solutions
                 if len(self.solutions) <= current_exercise - 1:
-                    self.solutions.append([])
+                    for _ in range(current_exercise - len(self.solutions)):
+                        self.solutions.append([])
 
                 self.solutions[current_exercise - 1].append(
                     get_cell(ws, index_num, 3)

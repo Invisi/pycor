@@ -7,10 +7,9 @@ from pathlib import Path
 
 from cryptography.fernet import Fernet
 
-from . import config
-from . import utils
+from . import config, utils
 
-__version__ = "2021-02-27"
+__version__ = "2021-04-23"
 
 from pycor import log, main
 

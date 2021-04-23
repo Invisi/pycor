@@ -12,9 +12,7 @@ import typing
 from email.utils import formatdate
 from pathlib import Path
 
-from pycor import excel
-from pycor import utils
-from pycor import config
+from pycor import config, excel, utils
 
 EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -379,7 +377,9 @@ class Mail:
                                 header="content-disposition",
                             )
                             possible_files[0].set_param(
-                                "name", f"{code_name}.xlsx", header="content-type",
+                                "name",
+                                f"{code_name}.xlsx",
+                                header="content-type",
                             )
 
                             new_msg = email.mime.multipart.MIMEMultipart("alternative")
