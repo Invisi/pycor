@@ -236,14 +236,13 @@ class Student(Commons):
             )
 
             if exercise_file.exists():
-                # noinspection PyTypeChecker
-                block_status = np.loadtxt(exercise_file)
+                block_status = np.loadtxt(str(exercise_file))
 
                 # Check if user's try list doesn't match the specified max_tries
-                if len(block_status) > max_attempts:
+                if block_status.size > max_attempts:
                     block_status = block_status[0:max_attempts]
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
-                elif len(block_status) < max_attempts:
+                elif block_status.size < max_attempts:
                     # Extend list
                     block_status = np.append(
                         block_status, [0] * (max_attempts - len(block_status))
