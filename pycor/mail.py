@@ -32,21 +32,52 @@ def _encode_name(x: str) -> str:
         return ""
 
 
-# Find files and filter out non-xlsx
-def _filter(_: email.message.Message) -> bool:
+def _filter(
+    msg: email.message.Message,
+) -> typing.Tuple[email.message.Message, typing.Union[bool, str]]:
+    """
+    Finds files and filters out non-xlsx, recursively
+    """
+
     # Throw out strings
-    if isinstance(_, str):
-        return False
+    if isinstance(msg, str):
+        return typing.cast(email.message.Message, msg), False
+
+    # This might be an S/MIME mail
+    if msg.get_content_type() == "multipart/mixed":
+        sub_payload: typing.List[email.message.Message] = msg.get_payload()
+
+        # Return early, we don't care about non-lists
+        if not isinstance(sub_payload, list):
+            return msg, False
+
+        # Try to find excel file in sub payload
+        for potential_file in sub_payload:
+            msg, name_or_not = _filter(potential_file)
+            if name_or_not:
+                return msg, name_or_not
+
+        return msg, False
 
     # Non-excel files
     if (
-        _.get_content_type() != EXCEL_MIME
-        and _.get_content_type() != "application/octet-stream"
+        msg.get_content_type() != EXCEL_MIME
+        and msg.get_content_type() != "application/octet-stream"
     ):
         # Outlook for iOS (e.g.) will attach the file as octet-stream
-        return False
+        return msg, False
 
-    return _encode_name(_.get_filename()).lower().endswith(".xlsx")
+    return msg, _encode_name(msg.get_filename()).lower().endswith(".xlsx")
+
+
+def filter_files(msg: email.message.Message) -> typing.List[email.message.Message]:
+    _files = []
+    for _ in typing.cast(typing.Iterable[email.message.Message], msg.get_payload()):
+        msg, name_or_not = _filter(_)
+        if name_or_not:
+            _files.append(msg)
+
+    return _files
 
 
 class Mail:
@@ -165,7 +196,7 @@ class Mail:
                         self.send(student_email, *Generator.problem_forwarded())
                         continue
 
-                    possible_files = list(filter(_filter, msg.get_payload()))
+                    possible_files = filter_files(msg)
 
                     if len(possible_files) != 1:
                         # No file, multiple files or invalid file. Notify student
@@ -359,7 +390,7 @@ class Mail:
                             # Ignore mailer-daemon, no-reply, or own account
                             continue
                         elif student_email.endswith("fh-aachen.de"):
-                            possible_files = list(filter(_filter, msg.get_payload()))
+                            possible_files = filter_files(msg)
                             if len(possible_files) != 1:
                                 # No file, multiple files or invalid file. Notify student
                                 self.log.warning(
