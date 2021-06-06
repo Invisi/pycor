@@ -554,10 +554,17 @@ class Corrector(Commons):
                     solutions.append([])
 
                 for cell_number in range(exercise[0], exercise[1] + 1):
+                    solution_name = ws.Cells(cell_number, 2).Value
+                    solution_value = ws.Cells(cell_number, 3).Value
+
+                    # Skip value to account for empty tasks
+                    if solution_name is None and solution_value is None:
+                        continue
+
                     solutions[idx].append(
                         {
-                            "name": ws.Cells(cell_number, 2).Value,  # B{index}
-                            "value": ws.Cells(cell_number, 3).Value,  # C{index}
+                            "name": solution_name,  # B{index}
+                            "value": solution_value,  # C{index}
                             "tolerance_rel": ws.Cells(cell_number, 4).Value,  # D{index}
                             "tolerance_abs": ws.Cells(cell_number, 5).Value,  # E
                         }
