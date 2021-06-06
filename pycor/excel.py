@@ -245,7 +245,7 @@ class Student(Commons):
                 elif block_status.size < max_attempts:
                     # Extend list
                     block_status = np.append(
-                        block_status, [0] * (max_attempts - len(block_status))
+                        block_status, [0] * (max_attempts - block_status.size)
                     )
                     # noinspection PyTypeChecker
                     np.savetxt(exercise_file, block_status, fmt="%3.2f")
@@ -293,7 +293,11 @@ class Student(Commons):
                 block_status = np.zeros(max_attempts)
 
             # Check if user still has tries
-            try_row = [r[0] for r in enumerate(block_status) if r[1] == 0]
+            if block_status.size == 1:
+                # Account for block_status being a scalar
+                try_row = [0] if block_status[0] == 0 else []
+            else:
+                try_row = [r[0] for r in enumerate(block_status) if r[1] == 0]
 
             # There's at least one attempt left, let's log the results!
             if len(try_row) > 0:
