@@ -97,6 +97,10 @@ def find_valid_filenames() -> typing.Dict[str, excel.Corrector]:
     for group_path in config.FOLDERS:
         group: Path = Path(os.path.abspath(group_path))
 
+        if not group.exists():
+            log.warning("Could not find %s, skipping for now", group_path)
+            continue
+
         # Iterate over subjects
         for subject in group.iterdir():
             # Ignore files and blacklisted folders
