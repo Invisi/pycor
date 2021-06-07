@@ -247,17 +247,18 @@ def main():
                         corrector_solution[partial_idx]["name"]
                     )
 
-                # Update student block/pass stats
-                perc = int(
-                    sum(exercise_solved["correct"])
-                    / len(exercise_solved["correct"])
-                    * 100
-                )
-                blocked, passed = e.update_stats(idx, perc, corrector.max_attempts)
-                if passed:
-                    exercises_passed.append(idx)
-                if blocked:
-                    exercises_blocked.append(idx)
+                # Update student block/pass stats, the list may be empty
+                if len(exercise_solved["correct"]) > 0:
+                    perc = int(
+                        sum(exercise_solved["correct"])
+                        / len(exercise_solved["correct"])
+                        * 100
+                    )
+                    blocked, passed = e.update_stats(idx, perc, corrector.max_attempts)
+                    if passed:
+                        exercises_passed.append(idx)
+                    if blocked:
+                        exercises_blocked.append(idx)
 
                 compared_solutions.append(exercise_solved)
             # endregion
