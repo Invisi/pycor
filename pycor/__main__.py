@@ -1,7 +1,6 @@
 import argparse
 import datetime
 import getpass
-import os
 import time
 from pathlib import Path
 
@@ -14,10 +13,6 @@ __version__ = "2021-06-06"
 from pycor import log, main
 
 if __name__ == "__main__":
-    # Ignore warnings if not in debug mode
-    if not config.DEBUG:
-        os.environ["PYTHONWARNINGS"] = "ignore"
-
     parser = argparse.ArgumentParser(
         description="PyCor - Python Correction",
         epilog="Runs normally when no argument is supplied",
