@@ -185,18 +185,24 @@ class Student(Commons):
             if zipfile.is_zipfile(self.excel_file):
                 # Ignore formulas, ignore Excel's "smart" types
                 wb = load_workbook(self.excel_file)
+
+                # Raise error if no valid worksheet could be found
+                # e.g. if the file was saved via an older version of OpenOffice
+                if len(wb.worksheets) < 1:
+                    raise ExcelFileException("File does not contain a valid worksheet")
+
                 ws = wb.worksheets[0]
             else:
-                self.log.debug("Opening file via Excel since it's not a ZIP")
-                excel = setup_excel()
-                wb = excel.Workbooks.Open(self.excel_file, 0, False, None)
-                ws = wb.Worksheets(1)
+                # Excel has lots of fun exploits
+                raise ExcelFileException("File is not a valid .xlsx")
+
         except (TypeError, ValueError, KeyError):
             # KeyError happens if it's an invalid xlsx, like when a .ods is renamed.
             self.log.exception("Failed to read info from student file.")
             raise ExcelFileException("Failed to read information from student file.")
         except zipfile.BadZipFile:
             self.log.exception("Failed to open zip-like .xlsx file.")
+            raise ExcelFileException("File is not a valid .xlsx")
         else:
             self.mat_num = int(get_cell(ws, 10, 2) or -1)  # type: ignore
             self.dummies = [

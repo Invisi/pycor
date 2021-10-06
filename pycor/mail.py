@@ -177,7 +177,10 @@ class Mail:
                 ):
                     # Ignore mailer-daemon, no-reply, or own account
                     continue
-                elif student_email.endswith("fh-aachen.de"):
+                elif any(
+                    student_email.endswith(f"@{domain}")
+                    for domain in config.ACCEPTED_DOMAINS
+                ):
                     # Forward mails to admin if subject contains "problem"
                     if (
                         msg["Subject"]
@@ -389,7 +392,10 @@ class Mail:
                         ):
                             # Ignore mailer-daemon, no-reply, or own account
                             continue
-                        elif student_email.endswith("fh-aachen.de"):
+                        elif any(
+                            student_email.endswith(f"@{domain}")
+                            for domain in config.ACCEPTED_DOMAINS
+                        ):
                             possible_files = filter_files(msg)
                             if len(possible_files) != 1:
                                 # No file, multiple files or invalid file. Notify student

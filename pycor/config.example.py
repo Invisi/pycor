@@ -44,6 +44,9 @@ HEALTHCHECK_PING = None
 # Where to send mails with "PROBLEM" in the subject
 ADMIN_CONTACT = "root@example.com"
 
+# Domains from which mails should be accepted (student@domain.tld)
+ACCEPTED_DOMAINS = ["alumni.fh-aachen.de", "fh-aachen.de"]
+
 # Downloads mails from gmail and renames attachments
 # This should only be used as a last resort, takes corrector codename as key
 MAIL_FORWARDS = {
