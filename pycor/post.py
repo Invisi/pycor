@@ -116,11 +116,9 @@ class PostProcessing:
 
     def generate_bars(self):
         if self.exercise_count < 10:
-            bar_labels = [
-                "Ex. {}".format(x + 1) for x in range(self.exercise_count + 1)
-            ]
+            bar_labels = ["Ex. {}".format(x + 1) for x in range(self.exercise_count)]
         else:
-            bar_labels = [str(x + 1) for x in range(self.exercise_count + 1)]
+            bar_labels = [str(x + 1) for x in range(self.exercise_count)]
         passed = np.zeros(self.exercise_count)
         submitted = np.zeros(self.exercise_count)
 
