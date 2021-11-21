@@ -101,7 +101,7 @@ class Mail:
             self.imap = imaplib.IMAP4_SSL(config.MAIL_IMAP)
             self.imap.login(self.username, self.password)
             self.imap.select("INBOX")
-        except (imaplib.IMAP4.error, ConnectionError):
+        except (imaplib.IMAP4.error, ConnectionError, TimeoutError):
             self.log.exception("Failed to login to IMAP server.")
             raise LoginException
 

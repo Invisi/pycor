@@ -49,6 +49,11 @@ The script can then be run via the following command and will check for new
 mails as defined by `DELAY_SLEEP` and compare the file names to the code names 
 as defined in `corrector.xlsx`.
 
+
+### Usage
+Pycor can then be run via `pipenv run python -m pycor` or simply 
+`python -m pycor` after activating the virtual environment.
+
 ## Contributors
 - Daniel B. Bung ([@FlowCV]) - Initiator of the project
 - Daniel Valero ([@davahue]) - Maintainer until 2018

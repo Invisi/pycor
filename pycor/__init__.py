@@ -9,42 +9,41 @@ from pycor import config, excel, mail, post, utils
 log = utils.setup_logger(logging.DEBUG if config.DEBUG else logging.INFO)
 
 
-def switch_tolerance(lower_tolerance: float, higher_tolerance: float):
-    if lower_tolerance > higher_tolerance:
-        t = higher_tolerance
-        higher_tolerance = lower_tolerance
-        lower_tolerance = t
-
-    return lower_tolerance, higher_tolerance
-
-
 def compare(
     attempt: typing.Union[float, str],
     solution: typing.Union[float, str],
     tolerance_rel: typing.Optional[typing.Union[int, float]],
     tolerance_abs: typing.Optional[typing.Union[int, float]],
-):
+) -> bool:
     """
-    Compares student's attempt to solution and returns True if the attempt is within either tolerance margin
+    Compares student's attempt to solution and returns True if the attempt is
+    within either tolerance margin
 
     :param attempt:
     :param solution:
     :param tolerance_rel:
     :param tolerance_abs:
-    :return:
     """
     try:
+        # Solution is empty
+        if solution is None:
+            return True
+
+        # Trim attempt and check if field is empty
+        if isinstance(attempt, str):
+            attempt = attempt.strip()
+
+            # Student submitted empty value and solution is not empty
+            if len(attempt) == 0 and solution is not None:
+                return False
+
         # In case the student made a space after the comma...
         if isinstance(attempt, str) and isinstance(solution, float):
-            attempt = float(attempt.replace(",", ".").replace(" ", ""))
+            attempt = float(attempt.replace(",", "."))
 
         # Compare string values
         if isinstance(solution, str):
             return solution.lower().strip() == str(attempt).lower().strip()
-
-        # Solution was empty
-        if solution is None:
-            return True
 
         log.debug(
             "Comparing %s (%s) to %s (%s) with rel:%s abs:%s",
@@ -60,17 +59,11 @@ def compare(
         if isinstance(solution, float):
             absolute, relative = False, False
             if tolerance_rel is not None:
-                lower_tolerance, higher_tolerance = switch_tolerance(
-                    (1 - tolerance_rel / 100.0) * solution,
-                    (1 + tolerance_rel / 100.0) * solution,
+                relative = abs(solution - attempt) <= abs(
+                    solution * tolerance_rel / 100.0
                 )
-
-                relative = lower_tolerance <= attempt <= higher_tolerance
             if tolerance_abs is not None:
-                lower_tolerance, higher_tolerance = switch_tolerance(
-                    solution - tolerance_abs, solution + tolerance_abs
-                )
-                absolute = lower_tolerance <= attempt <= higher_tolerance
+                absolute = abs(solution - attempt) <= abs(tolerance_abs)
             return absolute or relative or attempt == solution
     except (TypeError, ValueError):  # Unexpected values or failed cast
         log.exception(

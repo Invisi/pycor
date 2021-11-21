@@ -204,7 +204,12 @@ class Student(Commons):
             self.log.exception("Failed to open zip-like .xlsx file.")
             raise ExcelFileException("File is not a valid .xlsx")
         else:
-            self.mat_num = int(get_cell(ws, 10, 2) or -1)  # type: ignore
+            try:
+                self.mat_num = int(get_cell(ws, 10, 2) or -1)  # type: ignore
+            except ValueError:
+                self.log.warning("Failed to parse mat num from %s", self.excel_file)
+                self.mat_num = -1
+
             self.dummies = [
                 get_cell(ws, 9, column) for column in range(2, dummy_count + 2)
             ]  # B9 - I9 (or more)
