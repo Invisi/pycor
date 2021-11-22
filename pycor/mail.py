@@ -265,12 +265,9 @@ class Mail:
             return None
 
         # Save file in proper folder
-        basename, extension = os.path.splitext(_file.get_filename())
-
-        file_path = user_dir / "{}_{}{}".format(
+        file_path = user_dir / "{}_{}.xlsx".format(
             datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m-%d %H.%M.%S"),
             utils.random_string(),
-            extension,
         )
 
         with file_path.open("wb") as fp:
