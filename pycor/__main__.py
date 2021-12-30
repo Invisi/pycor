@@ -8,7 +8,7 @@ from cryptography.fernet import Fernet
 
 from . import config, utils
 
-__version__ = "2021-11-21"
+__version__ = "2021-12-30"
 
 from pycor import log, main
 

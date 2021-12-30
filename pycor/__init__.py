@@ -37,6 +37,10 @@ def compare(
             if len(attempt) == 0 and solution is not None:
                 return False
 
+        # Student left field empty but solution isn't empty
+        if attempt is None and solution is not None:
+            return False
+
         # In case the student made a space after the comma...
         if isinstance(attempt, str) and isinstance(solution, float):
             attempt = float(attempt.replace(",", "."))
@@ -230,6 +234,13 @@ def main():
                     "var_names": [],
                 }
                 for partial_idx, partial in enumerate(student_solution):
+                    # Empty line in corrector, skip it
+                    if (
+                        len(corrector_solution) == 0
+                        or corrector_solution[partial_idx]["value"] is None
+                    ):
+                        continue
+
                     exercise_solved["correct"][partial_idx] = compare(
                         partial,
                         corrector_solution[partial_idx]["value"],

@@ -5,6 +5,7 @@ import os
 import typing
 import zipfile
 from pathlib import Path
+from typing import List
 
 import numpy as np  # type: ignore
 import openpyxl.reader.excel  # type: ignore
@@ -127,16 +128,7 @@ class Commons:
                     exercise_row_end.append(index_num - 1)
                 exercise_row_begin.append(index_num)
 
-            if is_student:
-                # Collect submitted solutions
-                if len(self.solutions) <= current_exercise - 1:
-                    for _ in range(current_exercise - len(self.solutions)):
-                        self.solutions.append([])
-
-                self.solutions[current_exercise - 1].append(
-                    get_cell(ws, index_num, 3)
-                )  # C{index_sum}
-            else:
+            if not is_student:
                 # Verify tolerances are set correctly
                 try:
                     tolerance_rel = get_cell(ws, index_num, 4)  # D{index}
@@ -159,11 +151,24 @@ class Commons:
                         f"Ungültige absolute Toleranz in Feld E{index_num}.",
                     )
                     raise ExcelFileException("Invalid absolute tolerance.")
+
             previous_exercise = current_exercise
             index_num += +1
 
         for i in range(len(exercise_row_begin)):
             self.exercise_ranges.append([exercise_row_begin[i], exercise_row_end[i]])
+
+        # Set student solutions based on exercise ranges
+        if is_student:
+            for idx, exercise in enumerate(
+                self.exercise_ranges
+            ):  # type: (int, typing.List[int])
+                if len(self.solutions) <= idx:
+                    self.solutions.append([])
+
+                for cell_number in range(exercise[0], exercise[1] + 1):
+                    # C{index_sum}
+                    self.solutions[idx].append(get_cell(ws, cell_number, 3))
 
     def __str__(self):
         return str(self.excel_file)
@@ -567,10 +572,6 @@ class Corrector(Commons):
                 for cell_number in range(exercise[0], exercise[1] + 1):
                     solution_name = ws.Cells(cell_number, 2).Value
                     solution_value = ws.Cells(cell_number, 3).Value
-
-                    # Skip value to account for empty tasks
-                    if solution_name is None and solution_value is None:
-                        continue
 
                     solutions[idx].append(
                         {
